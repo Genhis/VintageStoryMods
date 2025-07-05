@@ -1,0 +1,12 @@
+{
+	"type": "code",
+	"modid": "filteredbackpacks",
+	"name": "Filtered Backpacks",
+	"authors": ["Genhis"],
+	"description": "Adds backpacks with more slots but restricted usage.",
+	"version": "0.1.0",
+	"website": "https://github.com/Genhis/VintageStoryMods",
+	"dependencies": {
+		"survival": "1.20.0"
+	}
+}

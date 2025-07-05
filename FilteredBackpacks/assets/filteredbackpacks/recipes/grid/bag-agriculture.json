@@ -1,0 +1,60 @@
+[
+	{
+		"name": "bag-agriculture-simple",
+		"width": 3,
+		"height": 2,
+		"ingredientPattern": "ATB,PLP",
+		"ingredients": {
+			"A": {"type": "item", "code": "game:grain-*", "quantity": 16},
+			"B": {"type": "item", "code": "game:seeds-*", "quantity": 8},
+			"T": {"type": "item", "code": "game:flaxtwine"},
+			"L": {"type": "block", "code": "game:linen-*"},
+			"P": {"type": "item", "code": "game:metalplate-*", "allowedVariants": ["tinbronze", "bismuthbronze", "blackbronze", "iron", "meteoriciron", "steel"]}
+		},
+		"output": {"type": "item", "code": "bag-agriculture-simple"}
+	},
+	{
+		"name": "bag-agriculture-simple",
+		"width": 3,
+		"height": 2,
+		"ingredientPattern": "ATB,PLP",
+		"ingredients": {
+			"A": {"type": "item", "code": "game:vegetable-*", "quantity": 16},
+			"B": {"type": "item", "code": "game:seeds-*", "quantity": 8},
+			"T": {"type": "item", "code": "game:flaxtwine"},
+			"L": {"type": "block", "code": "game:linen-*"},
+			"P": {"type": "item", "code": "game:metalplate-*", "allowedVariants": ["tinbronze", "bismuthbronze", "blackbronze", "iron", "meteoriciron", "steel"]}
+		},
+		"output": {"type": "item", "code": "bag-agriculture-simple"}
+	},
+	{
+		"name": "bag-agriculture-sturdy",
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "ATB,PLP,SSS",
+		"ingredients": {
+			"A": {"type": "item", "code": "game:grain-*", "quantity": 32},
+			"B": {"type": "item", "code": "game:seeds-*", "quantity": 16},
+			"T": {"type": "item", "code": "game:flaxtwine"},
+			"L": {"type": "block", "code": "game:linen-*", "quantity": 2},
+			"P": {"type": "item", "code": "game:metalplate-*", "allowedVariants": ["iron", "meteoriciron", "steel"]},
+			"S": {"type": "item", "code": "game:leather-sturdy-plain", "quantity": 3}
+		},
+		"output": {"type": "item", "code": "bag-agriculture-sturdy"}
+	},
+	{
+		"name": "bag-agriculture-sturdy",
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "ATB,PLP,SSS",
+		"ingredients": {
+			"A": {"type": "item", "code": "game:vegetable-*", "quantity": 32},
+			"B": {"type": "item", "code": "game:seeds-*", "quantity": 16},
+			"T": {"type": "item", "code": "game:flaxtwine"},
+			"L": {"type": "block", "code": "game:linen-*", "quantity": 2},
+			"P": {"type": "item", "code": "game:metalplate-*", "allowedVariants": ["iron", "meteoriciron", "steel"]},
+			"S": {"type": "item", "code": "game:leather-sturdy-plain", "quantity": 3}
+		},
+		"output": {"type": "item", "code": "bag-agriculture-sturdy"}
+	}
+]

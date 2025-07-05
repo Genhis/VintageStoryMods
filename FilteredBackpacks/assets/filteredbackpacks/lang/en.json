@@ -1,0 +1,11 @@
+{
+	"item-bag-agriculture-simple": "Agriculture bag",
+	"item-bag-agriculture-sturdy": "Sturdy agriculture bag",
+	"item-bag-forestry-simple": "Forestry bag",
+	"item-bag-forestry-sturdy": "Sturdy forestry bag",
+	"item-bag-mining-simple": "Mining bag",
+	"item-bag-mining-sturdy": "Sturdy mining bag",
+	"itemdesc-bag-agriculture-*": "Can only hold items related to agriculture.",
+	"itemdesc-bag-forestry-*": "Can only hold items related to forestry.",
+	"itemdesc-bag-mining-*": "Can only hold items related to mining."
+}

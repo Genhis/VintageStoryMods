@@ -1,0 +1,29 @@
+[
+	{
+		"ingredientPattern": "ATB,PLP",
+		"width": 3,
+		"height": 2,
+		"ingredients": {
+			"A": {"type": "block", "code": "game:log-*", "quantity": 8},
+			"B": {"type": "item", "code": "game:treeseed-*", "quantity": 8},
+			"T": {"type": "item", "code": "game:flaxtwine"},
+			"L": {"type": "block", "code": "game:linen-*"},
+			"P": {"type": "item", "code": "game:metalplate-*", "allowedVariants": ["tinbronze", "bismuthbronze", "blackbronze", "iron", "meteoriciron", "steel"]}
+		},
+		"output": {"type": "item", "code": "bag-forestry-simple"}
+	},
+	{
+		"ingredientPattern": "ATB,PLP,SSS",
+		"width": 3,
+		"height": 3,
+		"ingredients": {
+			"A": {"type": "block", "code": "game:log-*", "quantity": 16},
+			"B": {"type": "item", "code": "game:treeseed-*", "quantity": 16},
+			"T": {"type": "item", "code": "game:flaxtwine"},
+			"L": {"type": "block", "code": "game:linen-*", "quantity": 2},
+			"P": {"type": "item", "code": "game:metalplate-*", "allowedVariants": ["iron", "meteoriciron", "steel"]},
+			"S": {"type": "item", "code": "game:leather-sturdy-plain", "quantity": 3}
+		},
+		"output": {"type": "item", "code": "bag-forestry-sturdy"}
+	}
+]

@@ -1,0 +1,6 @@
+[
+  {"side": "server", "file": "game:itemtypes/wearable/bag/miningbag", "op": "add", "path": "/enabled", "value": false},
+  {"side": "server", "file": "game:itemtypes/wearable/bag/miningbagsturdy", "op": "add", "path": "/enabled", "value": false},
+  {"side": "server", "file": "game:recipes/grid/miningbag", "op": "add", "path": "/0/enabled", "value": false},
+  {"side": "server", "file": "game:recipes/grid/miningbag", "op": "add", "path": "/1/enabled", "value": false}
+]

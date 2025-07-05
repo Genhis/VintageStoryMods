@@ -5,6 +5,7 @@ $tmp = "$projectDir/bin/tmp/"
 mkdir $tmp > $null
 
 robocopy "$projectDir/bin/Release/Mods/mod/" $tmp > $null
+robocopy "$projectDir/assets/" "$tmp/assets/" /e > $null
 Copy-Item "$projectDir/changelog.md" $tmp
 Copy-Item "$projectDir/readme.md" $tmp
 Copy-Item "$projectDir/../license.txt" $tmp
