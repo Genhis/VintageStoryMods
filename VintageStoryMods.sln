@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterSmelting", "BetterSme
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FilteredBackpacks", "FilteredBackpacks\FilteredBackpacks.csproj", "{92E7BC17-4016-D60C-9952-A684A3E5EEFF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TextInputEnhancements", "TextInputEnhancements\TextInputEnhancements.csproj", "{6D1F3FED-E6E3-4247-8746-32107CDBBABD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{92E7BC17-4016-D60C-9952-A684A3E5EEFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{92E7BC17-4016-D60C-9952-A684A3E5EEFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{92E7BC17-4016-D60C-9952-A684A3E5EEFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D1F3FED-E6E3-4247-8746-32107CDBBABD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D1F3FED-E6E3-4247-8746-32107CDBBABD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D1F3FED-E6E3-4247-8746-32107CDBBABD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D1F3FED-E6E3-4247-8746-32107CDBBABD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
