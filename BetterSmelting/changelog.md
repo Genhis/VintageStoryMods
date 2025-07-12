@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-07-12
+### Fixed
+- [VS 1.21] Forge entity wasn't filling up properly when adding fuel.
+- Putting anthracite in the forge could overfill it.
+
 ## [0.1.0] - 2025-06-21
 ### Added
 - **Coal pile patch:** Layer burn duration depends on item burn duration and burn temperature.
