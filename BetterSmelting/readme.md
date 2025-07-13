@@ -10,7 +10,9 @@ It also makes mined coal burn longer in the forge and coal piles.
   - Contribution of item stack temperature above melting point towards smelting progress is no longer clamped to integer multiples of melting temperature (items smelt faster).
   - Cooking pot and crucible heating speed depends on items in the slots (configurable).
   - When adding items to cooking containers, the temperature is averaged between all slots instead of taking the lowest value.
-- **Forge patch:** The amount of fuel added depends on item burn duration and burn temperature.
+- **Forge patch:**
+  - The amount of fuel added depends on item burn duration and burn temperature.
+  - Configurable minimum fuel temperature - the default value is unchanged (1000).
 
 ## Burning time comparison (real-time minutes)
 
@@ -31,13 +33,17 @@ It also makes mined coal burn longer in the forge and coal piles.
 | Fuel type  | Vanilla | Better Smelting |
 | ---------: | ------: | --------------: |
 |   Charcoal |   08:00 |           08:00 |
-| Brown coal |   08:00 |           12:52 |
+|       Coke |   08:00 |           08:15 |
+| Brown coal |   08:00 |           13:02 |
 | Black coal |   08:00 |           15:30 |
+| Anthracite |   08:00 |           36:12 |
 
 ### Forge (one item)
 
 | Fuel type  | Vanilla | Better Smelting |
 | ---------: | ------: | --------------: |
 |   Charcoal |   01:12 |           01:12 |
+|       Coke |   01:12 |           01:14 |
 | Brown coal |   01:12 |           01:58 |
 | Black coal |   01:12 |           02:20 |
+| Anthracite |   01:12 |           05:26 |

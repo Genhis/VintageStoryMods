@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-07-13
+### Added
+- A setting to change minimum fuel temperature which the forge accepts.
+### Changed
+- Renamed the config file to "BetterSmelting.json" to match the mod name.
+
 ## [0.1.1] - 2025-07-12
 ### Fixed
 - [VS 1.21] Forge entity wasn't filling up properly when adding fuel.

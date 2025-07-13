@@ -40,6 +40,7 @@ namespace BetterSmelting {
 
 			this.Mod.Logger.Notification("Retrieving server config for the client");
 			BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier = api.World.Config.GetFloat(this.Mod.Info.ModID + "_CookingSlotHeatingTimeMultiplier");
+			BlockEntityForgePatch.ForgeMinimumFuelTemperature = api.World.Config.GetInt(this.Mod.Info.ModID + "_ForgeMinimumFuelTemperature");
 		}
 
 		public override void StartServerSide(ICoreServerAPI api) {
@@ -49,6 +50,7 @@ namespace BetterSmelting {
 
 			this.LoadServerConfig(api);
 			api.World.Config.SetFloat(this.Mod.Info.ModID + "_CookingSlotHeatingTimeMultiplier", BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier);
+			api.World.Config.SetInt(this.Mod.Info.ModID + "_ForgeMinimumFuelTemperature", BlockEntityForgePatch.ForgeMinimumFuelTemperature);
 		}
 
 		public override void Dispose() {
@@ -62,7 +64,7 @@ namespace BetterSmelting {
 
 		private void LoadServerConfig(ICoreServerAPI api) {
 			this.Mod.Logger.Notification("Loading server config");
-			const string configPath = "BetterFuelUsage.json";
+			const string configPath = "BetterSmelting.json";
 			ServerConfig config;
 			try {
 				config = api.LoadModConfig<ServerConfig>(configPath) ?? new ServerConfig();
@@ -74,6 +76,7 @@ namespace BetterSmelting {
 			}
 
 			BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier = config.CookingSlotHeatingTimeMultiplier;
+			BlockEntityForgePatch.ForgeMinimumFuelTemperature = config.ForgeMinimumFuelTemperature;
 		}
 	}
 }

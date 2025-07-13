@@ -8,6 +8,7 @@ namespace BetterSmelting.Patches {
 	[HarmonyPatch(typeof(BlockEntityForge))]
 	internal static class BlockEntityForgePatch {
 		private const float FuelValuePerCharcoal = 0.0625f;
+		internal static int ForgeMinimumFuelTemperature = 1000;
 
 		[HarmonyPatch("OnPlayerInteract")]
 		[HarmonyTranspiler]
@@ -15,15 +16,16 @@ namespace BetterSmelting.Patches {
 			CodeMatcher matcher = new(instructions);
 
 			// Find https://github.com/anegostudios/vssurvivalmod/blob/ac9a0059d84ca3449f066f26b5ee6b47bc9ce76a/BlockEntity/BEForge.cs#L181
+			// Remember `combprops` load instruction
+			// Replace `> 1000` with `> BlockEntityForgePatch.ForgeMinimumFuelTemperature`
 			matcher.MatchStartForward(new CodeMatch[] {
+				CodeMatch.IsLdloc(),
 				new(OpCodes.Ldfld, typeof(CombustibleProperties).GetField("BurnTemperature")),
 				new(OpCodes.Ldc_I4, 1000),
+				new(OpCodes.Ble),
 			}).ThrowIfInvalid("Could not find `BurnTemperature > 1000` in `BlockEntityForge.OnPlayerInteract()`");
-
-			// Remember `combprops` load instruction
-			CodeInstruction combpropsLdloc = matcher.InstructionAt(-1);
-			if(!combpropsLdloc.IsLdloc())
-				throw new System.InvalidOperationException("Ldfld(CombustibleProperties.BurnTemperature) is not preceeded by Ldloc instruction");
+			CodeInstruction combpropsLdloc = matcher.Instruction;
+			matcher.Advance(2).Set(OpCodes.Ldsfld, AccessTools.Field(typeof(BlockEntityForgePatch), "ForgeMinimumFuelTemperature"));
 
 			// Find https://github.com/anegostudios/vssurvivalmod/blob/ac9a0059d84ca3449f066f26b5ee6b47bc9ce76a/BlockEntity/BEForge.cs#L183
 			// Replace the condition with `if(!BlockEntityForgePatch.AddFuel(ref this.fuelLevel, combprops))`
