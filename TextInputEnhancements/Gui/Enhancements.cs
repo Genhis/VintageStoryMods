@@ -14,6 +14,7 @@ public interface ITextEnhancements {
 }
 
 public class Enhancements : IDisposable {
+	private const int DoubleClickMilliseconds = 400;
 	private static readonly FieldInfo leftPaddingField = typeof(GuiElementEditableTextBase).GetNonPublicField("leftPadding");
 	private static readonly FieldInfo linesField = typeof(GuiElementEditableTextBase).GetNonPublicField("lines");
 	private static readonly FieldInfo topPaddingField = typeof(GuiElementEditableTextBase).GetNonPublicField("topPadding");
@@ -22,6 +23,8 @@ public class Enhancements : IDisposable {
 	private readonly ICoreClientAPI api;
 	private bool handlingOnKeyEvent;
 	private bool mouseDown;
+	private int lastClickCursor;
+	private long lastClickTime;
 	private int? selectionStart;
 	private readonly int selectionTextureId;
 
@@ -76,8 +79,20 @@ public class Enhancements : IDisposable {
 		if(shiftDown && this.selectionStart == null)
 			this.selectionStart = this.parent.CaretPosWithoutLineBreaks;
 		baseFunc(api, e);
-		if(!shiftDown)
-			this.selectionStart = this.parent.CaretPosWithoutLineBreaks;
+
+		if(!shiftDown) {
+			long now = api.ElapsedMilliseconds;
+			int caretPos = this.parent.CaretPosWithoutLineBreaks;
+			bool isDoubleClick = this.lastClickCursor == caretPos && now - this.lastClickTime < Enhancements.DoubleClickMilliseconds;
+			this.lastClickCursor = caretPos;
+			this.lastClickTime = now;
+
+			if(isDoubleClick) {
+				this.SelectWordAtCursor();
+				return;
+			}
+			this.selectionStart = caretPos;
+		}
 		this.mouseDown = true;
 	}
 
@@ -196,6 +211,35 @@ public class Enhancements : IDisposable {
 			this.DeleteSelectedText(originalCaretPos, newCaretPos - originalCaretPos);
 	}
 
+	private void SelectWordAtCursor() {
+		static int GetCharRank(char c) {
+			if(Enhancements.IsWordChar(c))
+				return 3;
+			if(!char.IsWhiteSpace(c))
+				return 2;
+			return 1;
+		}
+
+		string line = this.Lines[this.parent.CaretPosLine];
+		int caretPosInLine = this.parent.CaretPosInLine;
+		int targetRank = caretPosInLine > 0 ? GetCharRank(line[caretPosInLine - 1]) : 0;
+		if(caretPosInLine < line.Length)
+			targetRank = Math.Max(targetRank, GetCharRank(line[caretPosInLine]));
+
+		int start = caretPosInLine;
+		while(start > 0 && GetCharRank(line[start - 1]) == targetRank)
+			--start;
+
+		int end = caretPosInLine;
+		while(end < line.Length && GetCharRank(line[end]) == targetRank)
+			++end;
+
+		if(start == caretPosInLine && end == caretPosInLine)
+			return;
+		this.selectionStart = this.parent.CaretPosWithoutLineBreaks - (caretPosInLine - start);
+		this.parent.SetCaretPos(end, this.parent.CaretPosLine);
+	}
+
 	private void DeleteSelectedText(int caretPos, int caretPosOffset) {
 		(int start, int end) = this.GetSelection(caretPos);
 		this.parent.SetValue(this.Text.Remove(start, end - start), false);
@@ -255,4 +299,6 @@ public class Enhancements : IDisposable {
 		context.Paint();
 		return api.Gui.LoadCairoTexture(surface, true);
 	}
+
+	internal static bool IsWordChar(char c) => c == '_' || char.IsLetterOrDigit(c);
 }

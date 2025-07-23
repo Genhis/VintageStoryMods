@@ -24,8 +24,6 @@ internal static class GuiElementEditableTextBasePatch {
 		if(dir != 1 && dir != -1)
 			throw new InvalidOperationException("Invalid direction for cursor movement: " + dir);
 
-		static bool IsWordChar(char c) => c == '_' || char.IsLetterOrDigit(c);
-
 		string text = instance.GetText();
 		int stop = dir < 0 ? -1 : text.Length;
 		int offset = dir < 0 ? -1 : 0;
@@ -34,11 +32,11 @@ internal static class GuiElementEditableTextBasePatch {
 		while(caretPos != stop && char.IsWhiteSpace(text[caretPos]))
 			caretPos += dir;
 
-		if(caretPos != stop && !IsWordChar(text[caretPos]))
-			while(caretPos != stop && !IsWordChar(text[caretPos]) && !char.IsWhiteSpace(text[caretPos]))
+		if(caretPos != stop && !Enhancements.IsWordChar(text[caretPos]))
+			while(caretPos != stop && !Enhancements.IsWordChar(text[caretPos]) && !char.IsWhiteSpace(text[caretPos]))
 				caretPos += dir;
 		else
-			while(caretPos != stop && IsWordChar(text[caretPos]))
+			while(caretPos != stop && Enhancements.IsWordChar(text[caretPos]))
 				caretPos += dir;
 
 		if(!startsWithWhitespace && forDeletion)
