@@ -8,6 +8,7 @@ using Vintagestory.GameContent;
 namespace BetterSmelting.Patches {
 	[HarmonyPatch(typeof(BlockEntityFirepit))]
 	internal static class BlockEntityFirepitPatch {
+		internal static int CookingSlotHeatingTimeLiquidSmeltedRatio = 0;
 		internal static float CookingSlotHeatingTimeMultiplier = 0;
 
 		[HarmonyPatch("OnSlotModifid")]
@@ -88,8 +89,12 @@ namespace BetterSmelting.Patches {
 			float cookingMass = 0;
 			foreach(ItemSlot slot in firepit.otherCookingSlots)
 				if(slot.Itemstack?.Collectible?.CombustibleProps != null)
-					cookingMass += slot.Itemstack.StackSize / slot.Itemstack.Collectible.CombustibleProps.SmeltedRatio;
+					cookingMass += slot.Itemstack.StackSize / BlockEntityFirepitPatch.GetSmeltedRatio(slot.Itemstack.Collectible);
 			return firepit.inputStack.StackSize + cookingMass * BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier;
+		}
+
+		private static int GetSmeltedRatio(CollectibleObject obj) {
+			return obj.Class == "ItemLiquidPortion" ? BlockEntityFirepitPatch.CookingSlotHeatingTimeLiquidSmeltedRatio : obj.CombustibleProps.SmeltedRatio;
 		}
 
 		[HarmonyPatch("smeltItems")]

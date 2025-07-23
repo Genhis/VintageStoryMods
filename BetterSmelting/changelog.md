@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-07-23
+### Fixed
+- Liquids with small portion size took too long to cook.
+
 ## [0.2.0] - 2025-07-13
 ### Added
 - A setting to change minimum fuel temperature which the forge accepts.

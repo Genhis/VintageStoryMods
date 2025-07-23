@@ -39,6 +39,7 @@ namespace BetterSmelting {
 				return;
 
 			this.Mod.Logger.Notification("Retrieving server config for the client");
+			BlockEntityFirepitPatch.CookingSlotHeatingTimeLiquidSmeltedRatio = api.World.Config.GetInt(this.Mod.Info.ModID + "_CookingSlotHeatingTimeLiquidSmeltedRatio");
 			BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier = api.World.Config.GetFloat(this.Mod.Info.ModID + "_CookingSlotHeatingTimeMultiplier");
 			BlockEntityForgePatch.ForgeMinimumFuelTemperature = api.World.Config.GetInt(this.Mod.Info.ModID + "_ForgeMinimumFuelTemperature");
 		}
@@ -49,6 +50,7 @@ namespace BetterSmelting {
 				return;
 
 			this.LoadServerConfig(api);
+			api.World.Config.SetInt(this.Mod.Info.ModID + "_CookingSlotHeatingTimeLiquidSmeltedRatio", BlockEntityFirepitPatch.CookingSlotHeatingTimeLiquidSmeltedRatio);
 			api.World.Config.SetFloat(this.Mod.Info.ModID + "_CookingSlotHeatingTimeMultiplier", BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier);
 			api.World.Config.SetInt(this.Mod.Info.ModID + "_ForgeMinimumFuelTemperature", BlockEntityForgePatch.ForgeMinimumFuelTemperature);
 		}
@@ -75,6 +77,7 @@ namespace BetterSmelting {
 				config = new ServerConfig();
 			}
 
+			BlockEntityFirepitPatch.CookingSlotHeatingTimeLiquidSmeltedRatio = config.CookingSlotHeatingTimeLiquidSmeltedRatio;
 			BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier = config.CookingSlotHeatingTimeMultiplier;
 			BlockEntityForgePatch.ForgeMinimumFuelTemperature = config.ForgeMinimumFuelTemperature;
 		}
