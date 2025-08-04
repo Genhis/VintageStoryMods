@@ -5,7 +5,7 @@
 	"side":  "Client",
 	"authors": ["Genhis"],
 	"description": "Improves text manipulation in input fields.",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"website": "https://github.com/Genhis/VintageStoryMods",
 	"dependencies": {
 		"game": "1.20.0"

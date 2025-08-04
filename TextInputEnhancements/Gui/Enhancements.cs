@@ -118,6 +118,11 @@ public class Enhancements : IDisposable {
 	}
 
 	private void OnKeyDownInternal(ICoreClientAPI api, KeyEvent e, Action<ICoreClientAPI, KeyEvent> baseFunc) {
+		if(e.AltPressed) { // All shortcuts should work only if Alt is not pressed.
+			e.Handled = true; // Textfield should consume all Alt actions, otherwise we would start to move when typing with AltGr.
+			return;
+		}
+
 		if((e.CtrlPressed || e.CommandPressed) && this.OnControlAction(e)) {
 			e.Handled = true;
 			return;
