@@ -9,5 +9,8 @@
 	"itemdesc-paintbrush": "Equip a painter's palette in your left hand to paint the map.",
 	"itemdesc-paintset-*": "Use a paintbrush in your right hand to paint the map.",
 	"iteminfo-map-chunk-coverage": "Chunk coverage: {0}",
-	"iteminfo-map-scales": "Map scales: {0}"
+	"iteminfo-map-scales": "Map scales: {0}",
+	"toolmode-map-scale": "Scale 1:{0} ({p1:0.# blocks|# block|# blocks} per pixel)",
+	"toolmode-paintbrush-refresh": "Refresh map state in {0}-chunk radius ({1} total)",
+	"toolmode-paintbrush-upgrade": "Upgrade map color in {0}-chunk radius ({1} total)"
 }
