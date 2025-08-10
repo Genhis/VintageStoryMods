@@ -1,0 +1,57 @@
+{
+	"code": "paintset",
+	"variantgroups": [
+		{"code": "tier", "states": ["vintage", "colorful"]}
+	],
+	"creativeinventory": {"general": ["*"], "items": ["*"]},
+	"durabilityByType": {
+		"*-vintage": 1024,
+		"*-colorful": 3072
+	},
+	"storageFlags": 257,
+	"attributes": {
+		"mapper": {
+			"colorLevelByType": {
+				"*-vintage": 2,
+				"*-colorful": 3
+			}
+		}
+	},
+	"behaviors": [
+		{
+			"name": "GroundStorable",
+			"properties": {
+				"layout": "Quadrants",
+				"collisionBox": {
+					"x1": 0, "y1": 0, "z1": 0,
+					"x2": 1, "y2": 0.1, "z2": 1
+				}
+			}
+		}
+	],
+	"shape": {"base": "item/painters-palette"},
+	"textures": {"colors": {"base": "item/palette-{tier}"}},
+	"guiTransform": {
+		"rotation": {"x": 130, "y": -140, "z": 0},
+		"origin": {"x": 0.5, "y": 0, "z": 0.5},
+		"scaleXyz": {"x": -2.2, "y": 2.2, "z": 2.2}
+	},
+	"tpHandTransform": {
+		"translation": {"x": -0.85, "y": -0.1, "z": -0.78},
+		"rotation": {"x": 100, "y": -60, "z": -90},
+		"origin": {"x": 0.5, "y": 0, "z": 0.5},
+		"scale": 0.8
+	},
+	"tpOffHandTransform": {
+		"translation": {"x": -0.85, "y": -0.15, "z": -0.78},
+		"rotation": {"x": 90, "y": -60, "z": -100},
+		"origin": {"x": 0.5, "y": 0, "z": 0.5},
+		"scale": 0.8
+	},
+	"groundTransform": {
+		"translation": {"x": 0, "y": 0, "z": 0},
+		"rotation": {"x": 0, "y": 0, "z": 0},
+		"origin": {"x": 0.5, "y": 0, "z": 0.5},
+		"scale": 4.5
+	}
+}

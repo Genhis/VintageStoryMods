@@ -1,0 +1,13 @@
+{
+	"item-map-precise-coal": "Precise map",
+	"item-map-primitive-coal": "Primitive map",
+	"item-paintbrush": "Paintbrush",
+	"item-paintset-colorful": "Colorful palette",
+	"item-paintset-vintage": "Vintage palette",
+	"itemdesc-map-precise-coal": "A more accurate mapping method, more details, and simply more paper.",
+	"itemdesc-map-primitive-coal": "A good starting tool for amateur cartographers.",
+	"itemdesc-paintbrush": "Equip a painter's palette in your left hand to paint the map.",
+	"itemdesc-paintset-*": "Use a paintbrush in your right hand to paint the map.",
+	"iteminfo-map-chunk-coverage": "Chunk coverage: {0}",
+	"iteminfo-map-scales": "Map scales: {0}"
+}

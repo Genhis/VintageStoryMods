@@ -1,0 +1,47 @@
+{
+	"editor": {
+		"allAngles": false,
+		"entityTextureMode": false
+	},
+	"textureWidth": 16,
+	"textureHeight": 16,
+	"textures": {
+		"map": "item/map-precise"
+	},
+	"elements": [
+		{
+			"name": "Fold1",
+			"from": [2.0, 0.0, 4.0],
+			"to": [6.0, 0.0, 12.0],
+			"rotationOrigin": [2.0, 0.0, 4.0],
+			"rotationZ": 20.0,
+			"faces": {
+				"up": {"texture": "#map", "uv": [0.0, 0.0, 16.0, 8.0], "rotation": 270, "autoUv": false}
+			},
+			"children": [
+				{
+					"name": "Fold2",
+					"from": [4.0, 0.0, 0.0],
+					"to": [8.0, 0.0, 8.0],
+					"rotationOrigin": [4.0, 0.0, 0.0],
+					"rotationZ": -30.0,
+					"faces": {
+						"up": {"texture": "#map", "uv": [0.0, 8.0, 16.0, 16.0], "rotation": 90, "autoUv": false}
+					},
+					"children": [
+						{
+							"name": "Fold3",
+							"from": [4.0, 0.0, 0.0],
+							"to": [8.0, 0.0, 8.0],
+							"rotationOrigin": [4.0, 0.0, 0.0],
+							"rotationZ": 30.0,
+							"faces": {
+								"up": {"texture": "#map", "uv": [0.0, 0.0, 16.0, 8.0], "rotation": 90, "autoUv": false}
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

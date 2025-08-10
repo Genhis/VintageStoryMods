@@ -4,8 +4,9 @@
 		<GenerateDependencyFile>false</GenerateDependencyFile>
 		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 		<NoWarn>MSB3277</NoWarn>
+		<Nullable>enable</Nullable>
 		<OutputPath>$(MSBuildProjectDirectory)/bin/$(Configuration)/Mods/mod</OutputPath>
-		<TargetFramework>net7.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 	</PropertyGroup>
 	<PropertyGroup>
 		<Company></Company>
@@ -60,7 +61,7 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 		<Content Include="$(MSBuildProjectDirectory)/modicon.png">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory Condition="Exists('$(MSBuildProjectDirectory)/modicon.png')">PreserveNewest</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
 </Project>

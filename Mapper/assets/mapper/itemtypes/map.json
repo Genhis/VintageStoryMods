@@ -1,0 +1,39 @@
+{
+	"code": "map",
+	"class": "MapperMap",
+	"variantgroups": [
+		{"code": "tier", "states": ["primitive", "precise"]},
+		{"code": "color", "states": ["coal"]}
+	],
+	"creativeinventory": {"general": ["*"], "items": ["*"]},
+	"maxstacksize": 64,
+	"attributes": {
+		"mapper": {
+			"colorLevel": 1,
+			"maxZoomLevel": 5
+		},
+		"mapperByType": {
+			"*-primitive-*": {
+				"mapChunkCount": 256,
+				"minZoomLevel": 3
+			},
+			"*": {
+				"mapChunkCount": 64,
+				"minZoomLevel": 1
+			}
+		}
+	},
+	"shape": {"base": "item/map"},
+	"textures": {"map": {"base": "item/map-{tier}"}},
+	"guiTransform": {
+		"translation": {"x": 0, "y": 0, "z": 0},
+		"rotation": {"x": 50, "y": 75, "z": 0},
+		"origin": {"x": 0.52, "y": 0, "z": 0.47},
+		"scale": 2.2
+	},
+	"tpHandTransform": {
+		"translation": {"x": 0.92, "y": -0.3, "z": -0.25},
+		"rotation": {"x": 15, "y": -14, "z": 0},
+		"scaleXyz": {"x": -0.8, "y": 0.8, "z": 0.8}
+	}
+}

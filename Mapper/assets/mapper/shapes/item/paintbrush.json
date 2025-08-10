@@ -1,0 +1,57 @@
+{
+	"editor": {
+		"allAngles": false,
+		"entityTextureMode": false
+	},
+	"textureWidth": 16,
+	"textureHeight": 16,
+	"textures": {
+		"color": "game:block/coal/charcoal",
+		"wood": "game:block/wood/debarked/birch"
+	},
+	"elements": [
+		{
+			"name": "Stick",
+			"from": [0.0, 0.0, 0.0],
+			"to": [1.0, 10.0, 1.0],
+			"faces": {
+				"north": {"texture": "#wood", "uv": [13.5, 1.0, 14.5, 11.0]},
+				"east": {"texture": "#wood", "uv": [5.0, 3.0, 6.0, 13.0]},
+				"south": {"texture": "#wood", "uv": [2.5, 2.0, 3.5, 12.0]},
+				"west": {"texture": "#wood", "uv": [11.0, 1.5, 12.0, 11.5]},
+				"down": {"texture": "#wood", "uv": [5.0, 12.0, 6.0, 13.0]}
+			},
+			"children": [
+				{
+					"name": "Brush1",
+					"from": [-0.1, 10.0, -0.1],
+					"to": [1.1, 11.4, 1.1],
+					"rotationOrigin": [-0.1, 10.0, -0.1],
+					"faces": {
+						"north": {"texture": "#color", "uv": [3.0, 7.5, 4.0, 8.5]},
+						"east": {"texture": "#color", "uv": [12.5, 7.5, 13.5, 8.5]},
+						"south": {"texture": "#color", "uv": [7.5, 0.0, 8.5, 1.0]},
+						"west": {"texture": "#color", "uv": [2.0, 13.0, 3.0, 14.0]},
+						"up": {"texture": "#color", "uv": [1.0, 4.5, 2.0, 5.5]},
+						"down": {"texture": "#color", "uv": [10.0, 10.5, 11.0, 11.5]}
+					},
+					"children": [
+						{
+							"name": "Brush2",
+							"from": [0.2, 1.4, 0.2],
+							"to": [1.0, 1.9, 1.0],
+							"rotationOrigin": [0.2, 1.4, 0.2],
+							"faces": {
+								"north": {"texture": "#color", "uv": [6.5, 2.5, 7.5, 3.0], "autoUv": false},
+								"east": {"texture": "#color", "uv": [5.5, 6.0, 6.5, 6.5], "autoUv": false},
+								"south": {"texture": "#color", "uv": [9.0, 7.5, 10.0, 8.0], "autoUv": false},
+								"west": {"texture": "#color", "uv": [13.5, 10.5, 14.5, 11.0], "autoUv": false},
+								"up": {"texture": "#color", "uv": [3.5, 3.5, 4.5, 4.5], "autoUv": false}
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
