@@ -31,6 +31,7 @@
 	],
 	"shape": {"base": "item/painters-palette"},
 	"textures": {"colors": {"base": "item/palette-{tier}"}},
+	"heldLeftTpIdleAnimation": "mapper:offhanditemready",
 	"guiTransform": {
 		"rotation": {"x": 130, "y": -140, "z": 0},
 		"origin": {"x": 0.5, "y": 0, "z": 0.5},

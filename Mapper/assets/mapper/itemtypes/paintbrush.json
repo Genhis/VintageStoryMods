@@ -5,7 +5,14 @@
 	"attributes": {
 		"mapper": {
 			"minRange": 0,
-			"maxRange": 4
+			"maxRange": 4,
+			"interactionData": {
+				"duration": 2,
+				"animationName": "mapper:paint",
+				"loopSound": "sounds/paintbrush-loop",
+				"loopSoundDuration": 0.4,
+				"successSound": "sounds/paintbrush-success"
+			}
 		}
 	},
 	"shape": {"base": "item/paintbrush"},

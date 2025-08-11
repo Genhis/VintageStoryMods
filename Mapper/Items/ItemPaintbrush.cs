@@ -5,11 +5,14 @@ using System;
 using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.Util;
 
 public class ItemPaintbrush : Item {
+	private readonly ItemInteractionData interactionData = new();
 	private SkillItem[]? toolModes;
+	private byte colorLevel;
 	private bool hasUpgradeMode;
 	private int minRange;
 	private int stepRange;
@@ -21,6 +24,8 @@ public class ItemPaintbrush : Item {
 
 		JsonObject input = this.GetMapperAttributes();
 		ILogger logger = api.Logger;
+		this.interactionData.OnLoaded(this, input["interactionData"]);
+		this.colorLevel = (byte)input.GetIntInRange(logger, "colorLevel", 0, 0, 3);
 		this.hasUpgradeMode = input["upgradeMode"].AsBool(true);
 		this.minRange = input.GetIntInRange(logger, "minRange", 0, 0, 20);
 		int maxRange = input.GetIntInRange(logger, "maxRange", this.minRange, this.minRange, 99);
@@ -50,6 +55,38 @@ public class ItemPaintbrush : Item {
 				toolMode.Dispose();
 	}
 
+	public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handling) {
+		if(this.GetColorLevel(slot, byEntity).Slot == null) {
+			if(!byEntity.Controls.ShiftKey && this.api is ICoreClientAPI capi)
+				capi.TriggerIngameError(this, "no-paintset", Lang.Get("mapper:error-no-paintset"));
+			base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handling);
+			return;
+		}
+		if(!firstEvent)
+			return;
+
+		handling = EnumHandHandling.PreventDefault;
+		this.interactionData.OnHeldInteractStart(slot, byEntity);
+	}
+
+	public override bool OnHeldInteractStep(float secondsUsed, ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel) {
+		if(this.GetColorLevel(slot, byEntity).Slot == null)
+			return base.OnHeldInteractStep(secondsUsed, slot, byEntity, blockSel, entitySel);
+		return this.interactionData.OnHeldInteractStep(slot, byEntity, secondsUsed);
+	}
+
+	public override void OnHeldInteractStop(float secondsUsed, ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel) {
+		ItemSlotAndColorLevel slotAndColor = this.GetColorLevel(slot, byEntity);
+		if(slotAndColor.Slot == null) {
+			base.OnHeldInteractStop(secondsUsed, slot, byEntity, blockSel, entitySel);
+			return;
+		}
+		if(!this.interactionData.OnHeldInteractStop(byEntity, secondsUsed))
+			return;
+
+		// TODO: game logic
+	}
+
 	public override void SetToolMode(ItemSlot slot, IPlayer player, BlockSelection selection, int toolMode) {
 		slot.Itemstack.Attributes.SetInt("toolMode", toolMode);
 	}
@@ -64,7 +101,26 @@ public class ItemPaintbrush : Item {
 
 	public override WorldInteraction[] GetHeldInteractionHelp(ItemSlot slot) {
 		return new WorldInteraction[] {
+			new() {ActionLangCode = "mapper:heldhelp-paint-area", MouseButton = EnumMouseButton.Right},
 			new() {ActionLangCode = "Change tool mode", HotKeyCode = "toolmodeselect", MouseButton = EnumMouseButton.None},
 		}.Append(base.GetHeldInteractionHelp(slot));
+	}
+
+	private struct ItemSlotAndColorLevel(ItemSlot? slot, byte colorLevel) {
+		public ItemSlot? Slot = slot;
+		public byte ColorLevel = colorLevel;
+	}
+
+	private ItemSlotAndColorLevel GetColorLevel(ItemSlot slot, EntityAgent entity) {
+		if(entity.Controls.ShiftKey)
+			return new ItemSlotAndColorLevel(null, 0);
+		if(this.colorLevel > 0)
+			return new ItemSlotAndColorLevel(slot, this.colorLevel);
+
+		slot = entity.LeftHandItemSlot;
+		byte colorLevel = (byte)(slot.Itemstack?.ItemAttributes?["mapper"]["colorLevel"].AsInt(0) ?? 0);
+		if(colorLevel > 0)
+			return new ItemSlotAndColorLevel(slot, colorLevel);
+		return new ItemSlotAndColorLevel(null, 0);
 	}
 }

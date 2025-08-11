@@ -10,7 +10,13 @@
 	"attributes": {
 		"mapper": {
 			"colorLevel": 1,
-			"maxZoomLevel": 5
+			"maxZoomLevel": 5,
+			"interactionData": {
+				"duration": 1.5,
+				"animationName": "holdbothhandslarge",
+				"startSound": "sounds/map-start",
+				"successSound": "sounds/map-success"
+			}
 		},
 		"mapperByType": {
 			"*-primitive-*": {

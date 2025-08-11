@@ -11,6 +11,7 @@ using Vintagestory.API.Datastructures;
 using Vintagestory.API.Util;
 
 public class ItemMap : Item {
+	private readonly ItemInteractionData interactionData = new();
 	private SkillItem[]? toolModes;
 	private int chunkCount;
 	private byte colorLevel;
@@ -23,6 +24,7 @@ public class ItemMap : Item {
 
 		JsonObject input = this.GetMapperAttributes();
 		ILogger logger = api.Logger;
+		this.interactionData.OnLoaded(this, input["interactionData"]);
 		this.chunkCount = input.GetIntInRange(logger, "mapChunkCount", 0, 0, 1 << 16);
 		this.colorLevel = (byte)input.GetIntInRange(logger, "colorLevel", 0, 0, 3);
 		this.minZoomLevel = input.GetIntInRange(logger, "minZoomLevel", 1, 1, 6);
@@ -46,6 +48,35 @@ public class ItemMap : Item {
 		if(this.toolModes != null)
 			foreach(SkillItem toolMode in this.toolModes)
 				toolMode.Dispose();
+	}
+
+	public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handling) {
+		if(byEntity.Controls.ShiftKey) {
+			base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handling);
+			return;
+		}
+		if(!firstEvent)
+			return;
+
+		handling = EnumHandHandling.PreventDefault;
+		this.interactionData.OnHeldInteractStart(slot, byEntity);
+	}
+
+	public override bool OnHeldInteractStep(float secondsUsed, ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel) {
+		if(byEntity.Controls.ShiftKey)
+			return base.OnHeldInteractStep(secondsUsed, slot, byEntity, blockSel, entitySel);
+		return this.interactionData.OnHeldInteractStep(slot, byEntity, secondsUsed);
+	}
+
+	public override void OnHeldInteractStop(float secondsUsed, ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel) {
+		if(byEntity.Controls.ShiftKey) {
+			base.OnHeldInteractStop(secondsUsed, slot, byEntity, blockSel, entitySel);
+			return;
+		}
+		if(!this.interactionData.OnHeldInteractStop(byEntity, secondsUsed))
+			return;
+
+		// TODO: game logic
 	}
 
 	public override void SetToolMode(ItemSlot slot, IPlayer player, BlockSelection selection, int toolMode) {
@@ -78,6 +109,7 @@ public class ItemMap : Item {
 
 	public override WorldInteraction[] GetHeldInteractionHelp(ItemSlot slot) {
 		return new WorldInteraction[] {
+			new() {ActionLangCode = "mapper:heldhelp-use", MouseButton = EnumMouseButton.Right},
 			new() {ActionLangCode = "Change tool mode", HotKeyCode = "toolmodeselect", MouseButton = EnumMouseButton.None},
 		}.Append(base.GetHeldInteractionHelp(slot));
 	}

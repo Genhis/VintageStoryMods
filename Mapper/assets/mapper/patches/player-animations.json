@@ -1,0 +1,85 @@
+[
+	{"file": "game:shapes/entity/humanoid/seraph-faceless", "op": "addeach", "path": "/animations/-", "value": [
+		{
+			"name": "Paint",
+			"code": "mapper:paint",
+			"quantityframes": 20,
+			"onActivityStopped": "Rewind",
+			"onAnimationEnd": "Repeat",
+			"keyframes": [
+				{
+					"frame": 0,
+					"elements": {
+						"UpperArmR": {"offsetX": 0.0, "offsetY": 0.0, "offsetZ": 1.2, "rotationX": 55.0, "rotationY": -20.0, "rotationZ": -25.0},
+						"LowerArmR": {"offsetX": 0.0, "offsetY": 1.0, "offsetZ": 0.3, "rotationX": 10.0, "rotationY": 20.0, "rotationZ": -90.0},
+						"ItemAnchor": {"offsetX": -0.4, "offsetY": 0.0, "offsetZ": -0.5, "rotationX": -45.0, "rotationY": 0.0, "rotationZ": -45.0},
+						"UpperArmL": {"offsetX": 0.0, "offsetY": 0.0, "offsetZ": -1.2, "rotationX": -50.0, "rotationY": -15.0, "rotationZ": -30.0},
+						"LowerArmL": {"rotationX": -10.0, "rotationY": -20.0, "rotationZ": -90.0},
+						"ItemAnchorL": {"offsetX": 0.0, "offsetY": 0.0, "offsetZ": 1.0, "rotationX": 10.0, "rotationY": 60.0, "rotationZ": 40.0}
+					}
+				},
+				{
+					"frame": 5,
+					"elements": {
+						"LowerArmR": {"rotationX": 10.0, "rotationY": 20.0, "rotationZ": -97.0}
+					}
+				},
+				{
+					"frame": 10,
+					"elements": {
+						"LowerArmR": {"rotationX": 10.0, "rotationY": 20.0, "rotationZ": -90.0},
+						"UpperArmR": {"rotationX": 45.0, "rotationY": -20.0, "rotationZ": -50.0},
+						"UpperArmL": {"rotationX": -49.0, "rotationY": -15.0, "rotationZ": -31.0},
+						"LowerArmL": {"rotationX": -10.0, "rotationY": -22.0, "rotationZ": -91.0}
+					}
+				},
+				{
+					"frame": 15,
+					"elements": {
+						"LowerArmR": {"rotationX": 10.0, "rotationY": 20.0, "rotationZ": -83.0}
+					}
+				}
+			]
+		},
+		{
+			"name": "OffHandItemReady",
+			"code": "mapper:offhanditemready",
+			"quantityframes": 1,
+			"onActivityStopped": "Rewind",
+			"onAnimationEnd": "Repeat",
+			"keyframes": [
+				{
+					"frame": 0,
+					"elements": {
+						"UpperArmL": {"rotationX": 0.0, "rotationY": 0.0, "rotationZ": -10.0},
+						"LowerArmL": {"rotationX": 0.0, "rotationY": 0.0, "rotationZ": -10.0}
+					}
+				}
+			]
+		}
+	]},
+	{"file": "game:entities/humanoid/player", "op": "addeach", "path": "/client/animations/-", "value": [
+		{
+			"code": "mapper:paint",
+			"animation": "mapper:paint",
+			"blendMode": "AddAverage",
+			"elementWeight": {
+				"UpperArmR": 100,
+				"LowerArmR": 100,
+				"ItemAnchor": 100,
+				"UpperArmL": 100,
+				"LowerArmL": 100,
+				"ItemAnchorL": 100
+			}
+		},
+		{
+			"code": "mapper:offhanditemready",
+			"animation": "mapper:offhanditemready",
+			"blendMode": "AddAverage",
+			"elementWeight": {
+				"UpperArmL": 1,
+				"LowerArmL": 1
+			}
+		}
+	]}
+]

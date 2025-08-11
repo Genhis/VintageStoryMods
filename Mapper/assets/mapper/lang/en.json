@@ -1,4 +1,7 @@
 {
+	"error-no-paintset": "You need to have a painter's palette in your left hand",
+	"heldhelp-paint-area": "Paint area",
+	"heldhelp-use": "Use",
 	"item-map-precise-coal": "Precise map",
 	"item-map-primitive-coal": "Primitive map",
 	"item-paintbrush": "Paintbrush",
