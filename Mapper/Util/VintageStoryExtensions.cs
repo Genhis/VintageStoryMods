@@ -1,6 +1,7 @@
 namespace Mapper.Util;
 
 using Cairo;
+using Mapper.Patches;
 using System;
 using System.Collections.Generic;
 using Vintagestory.API.Client;
@@ -27,7 +28,7 @@ public static class VintageStoryExtensions {
 			Code = $"{code}-{number}",
 			Name = Lang.Get(code, number, affectedCount),
 		}.WithIcon(api, (ctx, x, y, width, height, rgba) => {
-			api.Gui.DrawSvg(api.Assets.Get(iconPath), (ImageSurface)ctx.GetTarget(), x - 1, y - 1, (int)width + 2, (int)height + 2, null);
+			api.Gui.DrawSvgRGB(api.Assets.Get(iconPath), (ImageSurface)ctx.GetTarget(), x - 1, y - 1, (int)width + 2, (int)height + 2, null);
 
 			ctx.SetSourceRGBA(rgba);
 			ctx.SetFontSize((height + y * 2) * (2/3.0));
