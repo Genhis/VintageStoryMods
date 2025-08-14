@@ -11,12 +11,20 @@ public static class ReflectionExtensions {
 		return string.Join(", ", new List<Type>(args).ConvertAll(item => item.Name));
 	}
 
+	public static EventInfo GetCheckedEvent(this Type type, string name, BindingFlags instanceFlag) {
+		return type.GetEvent(name, BindingFlagsAccess | instanceFlag) ?? throw new InvalidOperationException($"Event does not exist: {type.Name}.{name}");
+	}
+
 	public static MethodInfo GetCheckedMethod(this Type type, string name, BindingFlags instanceFlag, Type[] args) {
 		return type.GetMethod(name, BindingFlagsAccess | instanceFlag, args) ?? throw new InvalidOperationException($"Method does not exist: {type.Name}.{name}({args.JoinNames()})");
 	}
 
 	public static PropertyInfo GetCheckedProperty(this Type type, string name, BindingFlags instanceFlag) {
 		return type.GetProperty(name, BindingFlagsAccess | instanceFlag) ?? throw new InvalidOperationException($"Property does not exist: {type.Name}.{name}");
+	}
+
+	public static MethodInfo CheckedAddMethod(this EventInfo evt) {
+		return evt.AddMethod ?? throw new InvalidOperationException($"Event does not have an add method: {evt.DeclaringType!.Name}.{evt.Name}");
 	}
 
 	public static MethodInfo CheckedGetMethod(this PropertyInfo property) {

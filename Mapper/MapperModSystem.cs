@@ -3,12 +3,15 @@ namespace Mapper;
 using HarmonyLib;
 using Mapper.Items;
 using Mapper.Util.Reflection;
+using Mapper.WorldMap;
 using System;
 using Vintagestory.API.Common;
+using Vintagestory.GameContent;
 
 public class MapperModSystem : ModSystem {
 	private static bool enabled = true;
 	private Harmony? harmony;
+	internal MapperChunkMapLayer? mapLayer;
 
 	public override void Start(ICoreAPI api) {
 		base.Start(api);
@@ -19,6 +22,7 @@ public class MapperModSystem : ModSystem {
 			this.PatchCode();
 
 		if(MapperModSystem.enabled) {
+			api.ModLoader.GetModSystem<WorldMapManager>().RegisterMapLayer<MapperChunkMapLayer>("chunks", 0);
 			api.RegisterItemClass("MapperMap", typeof(ItemMap));
 			api.RegisterItemClass("MapperPaintbrush", typeof(ItemPaintbrush));
 		}

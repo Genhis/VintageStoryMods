@@ -6,8 +6,10 @@ using System;
 using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
+using Vintagestory.API.MathTools;
 
 public static class VintageStoryExtensions {
 	public static JsonObject GetMapperAttributes(this CollectibleObject obj) {
@@ -38,5 +40,9 @@ public static class VintageStoryExtensions {
 			ctx.MoveTo(x + (width - extents.Width) / 2 - extents.XBearing, y + (height - extents.Height) / 2 - extents.YBearing);
 			ctx.ShowText(text);
 		}));
+	}
+
+	public static FastVec2i ToChunkPosition(this EntityPos entityPos) {
+		return new FastVec2i((int)entityPos.X / GlobalConstants.ChunkSize, (int)entityPos.Z / GlobalConstants.ChunkSize);
 	}
 }

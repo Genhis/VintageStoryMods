@@ -1,6 +1,7 @@
 namespace Mapper.Items;
 
 using Mapper.Util;
+using Mapper.WorldMap;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,6 +9,7 @@ using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
+using Vintagestory.API.Server;
 using Vintagestory.API.Util;
 
 public class ItemMap : Item {
@@ -75,8 +77,12 @@ public class ItemMap : Item {
 		}
 		if(!this.interactionData.OnHeldInteractStop(byEntity, secondsUsed))
 			return;
+		if(byEntity is not EntityPlayer{Player: IServerPlayer player})
+			return;
 
-		// TODO: game logic
+		MapperChunkMapLayer.GetInstance(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), int.MaxValue, this.availablePixels, this.colorLevel, (byte)(this.GetToolMode(slot, player, blockSel) + this.minZoomLevel));
+		slot.TakeOut(1);
+		slot.MarkDirty();
 	}
 
 	public override void SetToolMode(ItemSlot slot, IPlayer player, BlockSelection selection, int toolMode) {
