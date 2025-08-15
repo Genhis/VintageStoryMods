@@ -8,6 +8,7 @@ public readonly struct MapChunk {
 	public static readonly int[] UnexploredPixels = new int[Size * Size];
 
 	public readonly int[] Pixels = MapChunk.UnexploredPixels;
+	public readonly byte ZoomLevel;
 
 	static MapChunk() {
 		for(int y = 0, i = 0; y < Size; ++y)
@@ -17,7 +18,8 @@ public readonly struct MapChunk {
 
 	public MapChunk() {}
 
-	public MapChunk(int[] pixels) {
+	public MapChunk(int[] pixels, byte zoomLevel) {
 		this.Pixels = pixels;
+		this.ZoomLevel = zoomLevel;
 	}
 }

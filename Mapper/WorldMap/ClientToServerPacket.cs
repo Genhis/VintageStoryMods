@@ -1,11 +1,10 @@
 namespace Mapper.WorldMap;
 
 using ProtoBuf;
-using System.Collections.Generic;
 using Vintagestory.API.MathTools;
 
 [ProtoContract(ImplicitFields = ImplicitFields.AllPublic)]
-public class ServerToClientPacket {
-	public Dictionary<FastVec2i, ColorAndZoom>? Changes;
+public class ClientToServerPacket {
+	public required string PlayerUID;
 	public Vec3d? LastKnownPosition;
 }

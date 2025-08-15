@@ -5,6 +5,7 @@ using Mapper.Util.Reflection;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
@@ -24,6 +25,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	// Client variables
 	private readonly ClientMapStorage? clientStorage;
 	private readonly object? chunksToRedrawLock;
+	private Vec3d? lastKnownPosition;
 	private float lastThreadUpdateTime;
 
 	public override EnumMapAppSide DataSide => EnumMapAppSide.Server;
@@ -76,17 +78,39 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		return durability;
 	}
 
+	public bool UpdateLastKnownPosition(Vec3d? position) {
+		if((position == null) == (this.lastKnownPosition == null))
+			return false;
+
+		this.lastKnownPosition = position?.Clone();
+		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = ((ICoreClientAPI)this.api).World.Player.PlayerUID, LastKnownPosition = this.lastKnownPosition}));
+		return true;
+	}
+
 	public override void OnViewChangedServer(IServerPlayer player, int x1, int z1, int x2, int z2) {
 		if(this.joiningPlayers!.Count == 0)
 			return;
 
 		string uid = player.PlayerUID;
 		if(this.joiningPlayers.Remove(uid))
-			this.serverStorage!.GetOrCreate(uid);
+			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{LastKnownPosition = this.serverStorage!.GetOrCreate(uid).LastKnownPosition}));
+	}
+
+	public override void OnDataFromClient(byte[] data) {
+		ClientToServerPacket packet = SerializerUtil.Deserialize<ClientToServerPacket>(data);
+		this.serverStorage![packet.PlayerUID].LastKnownPosition = packet.LastKnownPosition;
 	}
 
 	public override void OnDataFromServer(byte[] data) {
 		ServerToClientPacket packet = SerializerUtil.Deserialize<ServerToClientPacket>(data);
+		if(packet.Changes == null) {
+			this.lastKnownPosition = packet.LastKnownPosition;
+			if(this.mapSink is WorldMapManager manager)
+				if(this.lastKnownPosition != null && manager.worldMapDlg?.DialogType == EnumDialogType.HUD)
+					manager.worldMapDlg.TryClose();
+			return;
+		}
+
 		lock(this.chunksToRedrawLock!)
 			this.UpdateChunks(packet.Changes);
 	}
@@ -103,6 +127,12 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		}
 	}
 
+	public override void OnTick(float dt) {
+		base.OnTick(dt);
+		if(this.lastKnownPosition != null)
+			this.CheckLastKnownPosition();
+	}
+
 	public override void OnOffThreadTick(float dt) {
 		if(this.api.Side == EnumAppSide.Server)
 			return;
@@ -114,6 +144,18 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 		this.CheckChunksToRedraw();
 		this.ProcessMappedChunks();
+	}
+
+	private void CheckLastKnownPosition() {
+		ICoreClientAPI capi = (ICoreClientAPI)this.api;
+		IClientPlayer player = capi.World.Player;
+		if(this.GetScaleFactor(player.Entity.Pos.ToChunkPosition()) == null)
+			return;
+
+		this.UpdateLastKnownPosition(null);
+		if(this.mapSink is WorldMapManager manager)
+			if(!manager.worldMapDlg.IsOpened() && capi.Settings.Bool["showMinimapHud"])
+				manager.ToggleMap(EnumDialogType.HUD);
 	}
 
 	private void CheckChunksToRedraw() {
@@ -139,7 +181,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			if(redrawRequest.Value.ZoomLevel > 0)
 				MapperChunkMapLayer.ApplyBoxFilter(pixels, redrawRequest.Value.ZoomLevel);
 
-			this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels);
+			this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, redrawRequest.Value.ZoomLevel);
 			readyMapPieces.Enqueue(new ReadyMapPiece{Cord = redrawRequest.Key, Pixels = pixels});
 		}
 	}
@@ -162,8 +204,21 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		}
 	}
 
+	public int? GetScaleFactor(FastVec2i chunkPosition) {
+		int? scaleFactor = this.clientStorage!.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk) ? 1 << mapChunk.ZoomLevel : null;
+		return scaleFactor;
+	}
+
+	public Vec3d GetPlayerOrLastKnownPosition() {
+		return this.lastKnownPosition ?? ((ICoreClientAPI)this.api).World.Player.Entity.Pos.XYZ;
+	}
+
 	public static MapperChunkMapLayer GetInstance(ICoreAPI api) {
 		return api.ModLoader.GetModSystem<MapperModSystem>().mapLayer!;
+	}
+
+	public static bool HasLastKnownPosition(ICoreAPI api) {
+		return MapperChunkMapLayer.GetInstance(api).lastKnownPosition != null;
 	}
 
 	private static void ConvertToGrayscale(int[] pixels, uint oceanColor) {

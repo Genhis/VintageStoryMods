@@ -15,6 +15,10 @@ public static class ReflectionExtensions {
 		return type.GetEvent(name, BindingFlagsAccess | instanceFlag) ?? throw new InvalidOperationException($"Event does not exist: {type.Name}.{name}");
 	}
 
+	public static FieldInfo GetCheckedField(this Type type, string name, BindingFlags instanceFlag) {
+		return type.GetField(name, BindingFlagsAccess | instanceFlag) ?? throw new InvalidOperationException($"Field does not exist: {type.Name}.{name}");
+	}
+
 	public static MethodInfo GetCheckedMethod(this Type type, string name, BindingFlags instanceFlag, Type[] args) {
 		return type.GetMethod(name, BindingFlagsAccess | instanceFlag, args) ?? throw new InvalidOperationException($"Method does not exist: {type.Name}.{name}({args.JoinNames()})");
 	}
