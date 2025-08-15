@@ -1,12 +1,14 @@
 namespace Mapper.Items;
 
 using Mapper.Util;
+using Mapper.WorldMap;
 using System;
 using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
+using Vintagestory.API.Server;
 using Vintagestory.API.Util;
 
 public class ItemPaintbrush : Item {
@@ -83,8 +85,16 @@ public class ItemPaintbrush : Item {
 		}
 		if(!this.interactionData.OnHeldInteractStop(byEntity, secondsUsed))
 			return;
+		if(byEntity is not EntityPlayer{Player: IServerPlayer player})
+			return;
 
-		// TODO: game logic
+		ItemStack paintsetStack = slotAndColor.Slot.Itemstack;
+		int oldDurability = paintsetStack.Collectible.GetRemainingDurability(paintsetStack);
+		int mode = this.GetToolMode(slot, player, blockSel);
+		int newDurability = MapperChunkMapLayer.GetInstance(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), mode % this.rangeCount * this.stepRange + this.minRange, oldDurability * MapChunk.Area + paintsetStack.Attributes.GetInt("fractionalDurability"), slotAndColor.ColorLevel, ColorAndZoom.EmptyZoomLevel, !this.hasUpgradeMode || mode >= this.rangeCount);
+
+		paintsetStack.Attributes.SetInt("fractionalDurability", newDurability % MapChunk.Area);
+		paintsetStack.Collectible.DamageItem(byEntity.World, byEntity, slotAndColor.Slot, oldDurability - newDurability / MapChunk.Area);
 	}
 
 	public override void SetToolMode(ItemSlot slot, IPlayer player, BlockSelection selection, int toolMode) {

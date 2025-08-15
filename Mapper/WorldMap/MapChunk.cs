@@ -16,4 +16,8 @@ public readonly struct MapChunk {
 	}
 
 	public MapChunk() {}
+
+	public MapChunk(int[] pixels) {
+		this.Pixels = pixels;
+	}
 }
