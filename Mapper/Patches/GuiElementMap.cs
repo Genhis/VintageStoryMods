@@ -11,6 +11,7 @@ using System.Reflection.Emit;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
+using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
@@ -21,7 +22,7 @@ public static class GuiElementMapPatch {
 		EntityPos entityPos = player.Entity.Pos;
 		int? scaleFactor = MapperChunkMapLayer.GetInstance(map.Api).GetScaleFactor(entityPos.ToChunkPosition());
 		if(scaleFactor != null)
-			map.CenterMapTo(entityPos.AsBlockPos);
+			map.CenterMapTo(MapperChunkMapLayer.ClampPosition(entityPos.XYZ, scaleFactor.Value).AsBlockPos);
 	}
 
 	[HarmonyPatch("OnKeyDown")]
@@ -53,6 +54,23 @@ public static class GuiElementMapPatch {
 		return false;
 	}
 
+	[HarmonyPatch("EnsureMapFullyLoaded")]
+	[HarmonyTranspiler]
+	internal static IEnumerable<CodeInstruction> EnsureMapFullyLoaded(IEnumerable<CodeInstruction> instructions) {
+		// Find https://github.com/anegostudios/vsessentialsmod/blob/b447263a4860f52d92fd29f800f3f1fd8e905c6a/Systems/WorldMap/GuiElementMap.cs#L256
+		// Append `.GrowBy(1, 0, 1)`
+		return new CodeMatcher(instructions).MatchEndForward([
+			new(OpCodes.Ldc_I4_S, (sbyte)GlobalConstants.ChunkSize),
+			new(OpCodes.Callvirt, typeof(Cuboidi).GetCheckedMethod("Div", BindingFlags.Instance, [typeof(int)])),
+			new(OpCodes.Pop),
+		]).ThrowIfInvalid("Could not find `GuiElementMap.EnsureMapFullyLoaded()::chunkviewBounds` to patch").InsertAndAdvance([
+			new(OpCodes.Ldc_I4_1),
+			new(OpCodes.Ldc_I4_0),
+			new(OpCodes.Ldc_I4_1),
+			CodeInstruction.Call(typeof(Cuboidi), "GrowBy", [typeof(int), typeof(int), typeof(int)]),
+		]).InstructionEnumeration();
+	}
+
 	[HarmonyPatch("RenderInteractiveElements")]
 	[HarmonyPrefix]
 	internal static void RenderInteractiveElements(GuiElementMap __instance, Vec3d ___prevPlayerPos, bool ___snapToPlayer) {
@@ -68,7 +86,7 @@ public static class GuiElementMapPatch {
 			return;
 		}
 
-		EntityPos currentPos = player.Entity.Pos;
+		Vec3d currentPos = MapperChunkMapLayer.ClampPosition(player.Entity.Pos.XYZ, scaleFactor.Value);
 		double diffX = currentPos.X - ___prevPlayerPos.X;
 		double diffZ = currentPos.Z - ___prevPlayerPos.Z;
 		if(Math.Abs(diffX) <= 0.0002 && Math.Abs(diffZ) <= 0.0002)

@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
@@ -204,17 +205,40 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		}
 	}
 
+	public int? GetScaleFactor(IServerPlayer player, FastVec2i chunkPosition) {
+		if(this.serverStorage![player.PlayerUID].Regions.TryGetValue(RegionPosition.FromChunkPosition(chunkPosition), out MapRegion mapRegion)) {
+			byte zoomLevel = mapRegion.GetZoomLevel(chunkPosition);
+			return zoomLevel == ColorAndZoom.EmptyZoomLevel ? null : 1 << zoomLevel;
+		}
+		return null;
+	}
+
 	public int? GetScaleFactor(FastVec2i chunkPosition) {
 		int? scaleFactor = this.clientStorage!.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk) ? 1 << mapChunk.ZoomLevel : null;
 		return scaleFactor;
 	}
 
 	public Vec3d GetPlayerOrLastKnownPosition() {
-		return this.lastKnownPosition ?? ((ICoreClientAPI)this.api).World.Player.Entity.Pos.XYZ;
+		if(this.lastKnownPosition != null)
+			return this.lastKnownPosition;
+
+		IClientPlayer player = ((ICoreClientAPI)this.api).World.Player;
+		EntityPos entityPos = player.Entity.Pos;
+		return MapperChunkMapLayer.ClampPosition(entityPos.XYZ, this.GetScaleFactor(entityPos.ToChunkPosition()) ?? 1);
 	}
 
 	public static MapperChunkMapLayer GetInstance(ICoreAPI api) {
 		return api.ModLoader.GetModSystem<MapperModSystem>().mapLayer!;
+	}
+
+	public static Vec3d ClampPosition(Vec3d position, int scaleFactor) {
+		if(scaleFactor == 1)
+			return position;
+
+		position.X = (int)position.X / scaleFactor * scaleFactor + scaleFactor / 2;
+		position.Y = (int)position.Y / scaleFactor * scaleFactor + scaleFactor / 2;
+		position.Z = (int)position.Z / scaleFactor * scaleFactor + scaleFactor / 2;
+		return position;
 	}
 
 	public static bool HasLastKnownPosition(ICoreAPI api) {

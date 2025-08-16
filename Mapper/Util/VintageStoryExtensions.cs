@@ -45,4 +45,8 @@ public static class VintageStoryExtensions {
 	public static FastVec2i ToChunkPosition(this EntityPos entityPos) {
 		return new FastVec2i((int)entityPos.X / GlobalConstants.ChunkSize, (int)entityPos.Z / GlobalConstants.ChunkSize);
 	}
+
+	public static FastVec2i ToChunkPosition(this Vec3d position) {
+		return new FastVec2i((int)position.X / GlobalConstants.ChunkSize, (int)position.Z / GlobalConstants.ChunkSize);
+	}
 }

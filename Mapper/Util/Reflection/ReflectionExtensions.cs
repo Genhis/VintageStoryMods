@@ -11,6 +11,10 @@ public static class ReflectionExtensions {
 		return string.Join(", ", new List<Type>(args).ConvertAll(item => item.Name));
 	}
 
+	public static ConstructorInfo GetCheckedConstructor(this Type type, Type[] args) {
+		return type.GetConstructor(BindingFlagsAccess | BindingFlags.Instance, args) ?? throw new InvalidOperationException($"Constructor does not exist: {type.Name}({args.JoinNames()})");
+	}
+
 	public static EventInfo GetCheckedEvent(this Type type, string name, BindingFlags instanceFlag) {
 		return type.GetEvent(name, BindingFlagsAccess | instanceFlag) ?? throw new InvalidOperationException($"Event does not exist: {type.Name}.{name}");
 	}

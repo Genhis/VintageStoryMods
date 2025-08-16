@@ -1,5 +1,7 @@
 {
 	"error-no-paintset": "You need to have a painter's palette in your left hand",
+	"error-unexplored-map": "You have to reveal this part with the map item before being able to place waypoints there.",
+	"error-unexplored-map-propick": "Prospecting results are not saved, you have to reveal this part with the map item first.",
 	"heldhelp-paint-area": "Paint area",
 	"heldhelp-use": "Use",
 	"hud-unknown-position": "<unknown>",

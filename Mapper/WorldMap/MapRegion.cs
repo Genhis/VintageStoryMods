@@ -28,6 +28,10 @@ public readonly struct MapRegion {
 		return null;
 	}
 
+	public readonly byte GetZoomLevel(FastVec2i chunkPosition) {
+		return this.data[MapRegion.GetIndex(chunkPosition)].ZoomLevel;
+	}
+
 	private static int GetIndex(FastVec2i chunkPosition) {
 		return chunkPosition.Y % Size * Size + chunkPosition.X % Size;
 	}

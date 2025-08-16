@@ -10,7 +10,9 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Config;
+using Vintagestory.API.MathTools;
 using Vintagestory.Client.NoObf;
 
 [HarmonyPatch(typeof(HudElementCoordinates))]
@@ -72,6 +74,19 @@ internal static class HudElementCoordinatesPatch {
 			CodeInstruction.Call(typeof(Lang), "Get", [typeof(string), typeof(object[])]),
 			CodeInstruction.StoreLocal(ldlocText.LocalIndex()),
 			new(OpCodes.Br, skipTextGeneration),
+		]);
+
+		// Find player position getter
+		// Change it to `MapperChunkMapLayer.ClampPosition(...Pos.XYZ, scaleFactor.Value).AsBlockPos`
+		matcher.MatchEndForward([
+			new(OpCodes.Ldfld, typeof(Entity).GetCheckedField("Pos", BindingFlags.Instance)),
+			new(OpCodes.Callvirt, typeof(EntityPos).GetCheckedProperty("AsBlockPos", BindingFlags.Instance).CheckedGetMethod()),
+		]).ThrowIfInvalid("Could not find `HudElementCoordinates.Every250ms()::Pos` to patch").RemoveInstruction().InsertAndAdvance([
+			new(OpCodes.Callvirt, typeof(EntityPos).GetCheckedProperty("XYZ", BindingFlags.Instance).CheckedGetMethod()),
+			CodeInstruction.LoadLocal(scaleFactor.LocalIndex, true),
+			new(OpCodes.Call, typeof(int?).GetCheckedProperty("Value", BindingFlags.Instance).CheckedGetMethod()),
+			CodeInstruction.Call(typeof(MapperChunkMapLayer), "ClampPosition", [typeof(Vec3d), typeof(int)]),
+			new(OpCodes.Callvirt, typeof(Vec3d).GetCheckedProperty("AsBlockPos", BindingFlags.Instance).CheckedGetMethod()),
 		]);
 
 		return matcher.InstructionEnumeration();
