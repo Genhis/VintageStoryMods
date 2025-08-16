@@ -150,7 +150,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	private void CheckLastKnownPosition() {
 		ICoreClientAPI capi = (ICoreClientAPI)this.api;
 		IClientPlayer player = capi.World.Player;
-		if(this.GetScaleFactor(player.Entity.Pos.ToChunkPosition()) == null)
+		if(this.GetScaleFactor(player, player.Entity.Pos.ToChunkPosition()) == null)
 			return;
 
 		this.UpdateLastKnownPosition(null);
@@ -213,8 +213,15 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		return null;
 	}
 
-	public int? GetScaleFactor(FastVec2i chunkPosition) {
+	public int? GetScaleFactor(IClientPlayer? player, FastVec2i chunkPosition) {
+		static int? GetCompassScaleFactor(ItemSlot slot) {
+			JsonObject? compassZoomLevel = slot.Itemstack?.ItemAttributes?["mapper"]["compassZoomLevel"];
+			return compassZoomLevel != null && compassZoomLevel.Exists ? 1 << Math.Clamp(compassZoomLevel.AsInt(1), 0, 30) : null;
+		}
+
 		int? scaleFactor = this.clientStorage!.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk) ? 1 << mapChunk.ZoomLevel : null;
+		if(player != null)
+			scaleFactor = MathUtil.Min(scaleFactor, MathUtil.Min(GetCompassScaleFactor(player.Entity.LeftHandItemSlot), GetCompassScaleFactor(player.Entity.RightHandItemSlot)));
 		return scaleFactor;
 	}
 
@@ -224,7 +231,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 		IClientPlayer player = ((ICoreClientAPI)this.api).World.Player;
 		EntityPos entityPos = player.Entity.Pos;
-		return MapperChunkMapLayer.ClampPosition(entityPos.XYZ, this.GetScaleFactor(entityPos.ToChunkPosition()) ?? 1);
+		return MapperChunkMapLayer.ClampPosition(entityPos.XYZ, this.GetScaleFactor(player, entityPos.ToChunkPosition()) ?? 1);
 	}
 
 	public static MapperChunkMapLayer GetInstance(ICoreAPI api) {

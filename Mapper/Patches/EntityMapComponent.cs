@@ -7,6 +7,8 @@ using Mapper.WorldMap;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using Vintagestory.API.Client;
+using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
@@ -63,6 +65,6 @@ internal static class EntityMapComponentPatch {
 	}
 
 	internal static int? GetScaleFactor(EntityMapComponent component) {
-		return MapperChunkMapLayer.GetInstance(component.capi).GetScaleFactor(component.entity.Pos.ToChunkPosition());
+		return MapperChunkMapLayer.GetInstance(component.capi).GetScaleFactor((component.entity as EntityPlayer)?.Player as IClientPlayer, component.entity.Pos.ToChunkPosition());
 	}
 }

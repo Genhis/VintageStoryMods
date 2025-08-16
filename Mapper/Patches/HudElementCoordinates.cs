@@ -96,6 +96,6 @@ internal static class HudElementCoordinatesPatch {
 		IClientPlayer player = api.World.Player;
 		if(player.WorldData.CurrentGameMode != EnumGameMode.Survival)
 			return 1;
-		return MapperChunkMapLayer.GetInstance(api).GetScaleFactor(player.Entity.Pos.ToChunkPosition());
+		return MapperChunkMapLayer.GetInstance(api).GetScaleFactor(player, player.Entity.Pos.ToChunkPosition());
 	}
 }

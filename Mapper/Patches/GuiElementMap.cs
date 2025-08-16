@@ -20,7 +20,7 @@ public static class GuiElementMapPatch {
 	public static void CenterMapToPlayer(this GuiElementMap map) {
 		IClientPlayer player = map.Api.World.Player;
 		EntityPos entityPos = player.Entity.Pos;
-		int? scaleFactor = MapperChunkMapLayer.GetInstance(map.Api).GetScaleFactor(entityPos.ToChunkPosition());
+		int? scaleFactor = MapperChunkMapLayer.GetInstance(map.Api).GetScaleFactor(player, entityPos.ToChunkPosition());
 		if(scaleFactor != null)
 			map.CenterMapTo(MapperChunkMapLayer.ClampPosition(entityPos.XYZ, scaleFactor.Value).AsBlockPos);
 	}
@@ -76,7 +76,7 @@ public static class GuiElementMapPatch {
 	internal static void RenderInteractiveElements(GuiElementMap __instance, Vec3d ___prevPlayerPos, bool ___snapToPlayer) {
 		MapperChunkMapLayer layer = MapperChunkMapLayer.GetInstance(__instance.Api);
 		IClientPlayer player = __instance.Api.World.Player;
-		int? scaleFactor = layer.GetScaleFactor(player.Entity.Pos.ToChunkPosition());
+		int? scaleFactor = layer.GetScaleFactor(player, player.Entity.Pos.ToChunkPosition());
 		if(scaleFactor == null) {
 			if(layer.UpdateLastKnownPosition(___prevPlayerPos)) {
 				GuiDialogWorldMap? worldMapDialog = __instance.Api.ModLoader.GetModSystem<WorldMapManager>().worldMapDlg;
