@@ -1,5 +1,6 @@
 namespace Mapper.WorldMap;
 
+using Mapper.Util.IO;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
 
@@ -11,6 +12,16 @@ public readonly struct MapRegion {
 
 	public MapRegion() {
 		this.data.Fill(new ColorAndZoom());
+	}
+
+	public MapRegion(VersionedReader input) {
+		for(int i = 0; i < Area; ++i)
+			this.data[i] = new ColorAndZoom(input);
+	}
+
+	public readonly void Save(VersionedWriter output) {
+		for(int i = 0; i < Area; ++i)
+			this.data[i].Save(output);
 	}
 
 	/// <returns>New zoom level if something was changed.</returns>

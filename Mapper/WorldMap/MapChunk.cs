@@ -1,5 +1,6 @@
 namespace Mapper.WorldMap;
 
+using Mapper.Util.IO;
 using Vintagestory.API.Config;
 
 public readonly struct MapChunk {
@@ -21,5 +22,38 @@ public readonly struct MapChunk {
 	public MapChunk(int[] pixels, byte zoomLevel) {
 		this.Pixels = pixels;
 		this.ZoomLevel = zoomLevel;
+	}
+
+	public MapChunk(VersionedReader input) {
+		ColorAndZoom modeAndZoom = new(input);
+		this.ZoomLevel = modeAndZoom.ZoomLevel;
+		if(modeAndZoom.Color == 0)
+			return;
+
+		this.Pixels = new int[MapChunk.Area];
+		int scaleFactor = 1 << this.ZoomLevel;
+		for(int y = 0; y < MapChunk.Size; y += scaleFactor)
+			for(int x = 0; x < MapChunk.Size; x += scaleFactor) {
+				int pixel = input.ReadInt32();
+				for(int innerY = 0; innerY < scaleFactor; ++innerY) {
+					int rowOffset = (y + innerY) * MapChunk.Size + x;
+					for(int innerX = 0; innerX < scaleFactor; ++innerX)
+						this.Pixels[rowOffset + innerX] = pixel;
+				}
+			}
+	}
+
+	public readonly void Save(VersionedWriter output) {
+		ColorAndZoom modeAndZoom = new(this.Pixels == MapChunk.UnexploredPixels ? (byte)0 : (byte)1, this.ZoomLevel);
+		modeAndZoom.Save(output);
+		if(modeAndZoom.Color == 0)
+			return;
+
+		int scaleFactor = 1 << this.ZoomLevel;
+		for(int y = 0; y < MapChunk.Size; y += scaleFactor) {
+			int rowOffset = y * MapChunk.Size;
+			for(int x = 0; x < MapChunk.Size; x += scaleFactor)
+				output.Write(this.Pixels[rowOffset + x]);
+		}
 	}
 }

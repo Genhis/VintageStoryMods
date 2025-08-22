@@ -1,5 +1,6 @@
 namespace Mapper.WorldMap;
 
+using Mapper.Util.IO;
 using System;
 using Vintagestory.API.MathTools;
 
@@ -13,6 +14,14 @@ public readonly struct RegionPosition : IEquatable<RegionPosition> {
 
 	private RegionPosition(FastVec2i pos) {
 		this.pos = pos;
+	}
+
+	public RegionPosition(VersionedReader input) {
+		this.pos = input.ReadFastVec2i();
+	}
+
+	public readonly void Save(VersionedWriter output) {
+		output.Write(this.pos);
 	}
 
 	public readonly bool Equals(RegionPosition other) {

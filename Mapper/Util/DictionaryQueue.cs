@@ -1,10 +1,11 @@
 namespace Mapper.Util;
 
+using System.Collections;
 using System.Collections.Generic;
 
 #nullable disable
 
-public class DictionaryQueue<TKey, TValue> where TKey: notnull {
+public class DictionaryQueue<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>> where TKey: notnull {
 	private readonly Dictionary<TKey, TValue> dictionary = [];
 	private readonly Queue<TKey> queue = [];
 
@@ -21,4 +22,21 @@ public class DictionaryQueue<TKey, TValue> where TKey: notnull {
 		this.dictionary.Remove(key, out TValue value);
 		return new(key, value);
 	}
+
+	public void Clear() {
+		this.dictionary.Clear();
+		this.queue.Clear();
+	}
+
+	public void EnsureCapacity(int capacity) {
+		this.dictionary.EnsureCapacity(capacity);
+		this.queue.EnsureCapacity(capacity);
+	}
+
+	public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
+		foreach(TKey key in this.queue)
+			yield return new KeyValuePair<TKey, TValue>(key, this.dictionary[key]);
+	}
+
+	IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 }

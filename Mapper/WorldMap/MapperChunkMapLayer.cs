@@ -5,9 +5,11 @@ using Mapper.Util.Reflection;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
+using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
@@ -25,6 +27,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 	// Client variables
 	private readonly ClientMapStorage? clientStorage;
+	private readonly string? clientStorageFilename;
 	private readonly object? chunksToRedrawLock;
 	private Vec3d? lastKnownPosition;
 	private float lastThreadUpdateTime;
@@ -35,11 +38,16 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(api is ICoreServerAPI sapi) {
 			this.serverStorage = [];
 			this.joiningPlayers = [];
+
+			sapi.Event.GameWorldSave += () => this.serverStorage.Save((ICoreServerAPI)this.api);
 			sapi.Event.PlayerJoin += player => this.joiningPlayers.Add(player.PlayerUID);
 		}
 		else {
 			this.clientStorage = new ClientMapStorage();
+			this.clientStorageFilename = MapperChunkMapLayer.GetClientStorageFilename(api);
 			this.chunksToRedrawLock = new();
+
+			this.clientStorage.Load(this.clientStorageFilename, api.Logger);
 		}
 	}
 
@@ -50,9 +58,12 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(modSystem.mapLayer != null)
 			throw new InvalidOperationException("Another MapperChunkMapLayer instance is already loaded");
 		modSystem.mapLayer = this;
+
+		this.serverStorage?.Load((ICoreServerAPI)this.api);
 	}
 
 	public override void OnShutDown() {
+		this.clientStorage?.Save(this.clientStorageFilename!, this.api.Logger);
 		this.api.ModLoader.GetModSystem<MapperModSystem>().mapLayer = null;
 		base.OnShutDown();
 	}
@@ -289,5 +300,11 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 						pixels[rowOffset + innerX] = (int)(0xFF000000 | (b << 16) | (g << 8) | r);
 				}
 			}
+	}
+
+	private static string GetClientStorageFilename(ICoreAPI api) {
+		string directory = Path.Combine(GamePaths.DataPath, "Maps", "MapperMod");
+		GamePaths.EnsurePathExists(directory);
+		return Path.Combine(directory, api.World.SavegameIdentifier + ".dat");
 	}
 }

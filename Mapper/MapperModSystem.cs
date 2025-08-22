@@ -2,6 +2,7 @@ namespace Mapper;
 
 using HarmonyLib;
 using Mapper.Items;
+using Mapper.Util.IO;
 using Mapper.Util.Reflection;
 using Mapper.WorldMap;
 using System;
@@ -39,6 +40,9 @@ public class MapperModSystem : ModSystem {
 		this.harmony = new Harmony(this.Mod.Info.ModID);
 		try {
 			this.harmony.PatchAll();
+
+			this.Mod.Logger.Notification("Testing save/load consistency");
+			SaveLoadTests.Run();
 		}
 		catch(Exception ex) {
 			this.Mod.Logger.Error("An error occured, disabling mod:\n" + ex.ToString());
