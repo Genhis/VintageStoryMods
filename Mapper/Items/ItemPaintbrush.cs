@@ -64,7 +64,7 @@ public class ItemPaintbrush : Item {
 			base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handling);
 			return;
 		}
-		if(!firstEvent)
+		if(!firstEvent || this.api.Side == EnumAppSide.Client && !MapperChunkMapLayer.GetInstance(this.api).CheckEnabledClient())
 			return;
 
 		handling = EnumHandHandling.PreventDefault;

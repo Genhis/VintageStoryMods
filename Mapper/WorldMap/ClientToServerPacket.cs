@@ -7,4 +7,5 @@ using Vintagestory.API.MathTools;
 public class ClientToServerPacket {
 	public required string PlayerUID;
 	public Vec3d? LastKnownPosition;
+	public bool RecoverMap;
 }

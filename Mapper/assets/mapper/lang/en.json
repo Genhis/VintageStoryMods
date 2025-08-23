@@ -1,4 +1,11 @@
 {
+	"commanddesc-mapper-enable": "Enables Mapper mod if it was disabled and overwrites old data.",
+	"commandresult-mapper-enable-client-error": "Mapper mod is already enabled on the client.",
+	"commandresult-mapper-enable-client-success": "Ok, Mapper mod enabled on the client.",
+	"commandresult-mapper-enable-server-error": "Mapper mod is already enabled on the server.",
+	"commandresult-mapper-enable-server-success": "Ok, Mapper mod enabled on the server.",
+	"error-mod-disabled-client": "Mapper mod disabled itself to protect stored data, type '.mapper enable' if you wish to enable it and overwrite corrupted data.",
+	"error-mod-disabled-server": "<font color='red'>Mapper mod disabled itself to protect stored data, please contact the server owner to fix this issue.</font>",
 	"error-no-paintset": "You need to have a painter's palette in your left hand",
 	"error-unexplored-map": "You have to reveal this part with the map item before being able to place waypoints there.",
 	"error-unexplored-map-propick": "Prospecting results are not saved, you have to reveal this part with the map item first.",

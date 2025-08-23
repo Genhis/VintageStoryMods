@@ -27,4 +27,11 @@ public class ServerPlayerMap {
 		}
 		output.WriteOptional(this.LastKnownPosition);
 	}
+
+	public Dictionary<FastVec2i, ColorAndZoom> PrepareClientRecovery() {
+		Dictionary<FastVec2i, ColorAndZoom> result = [];
+		foreach(KeyValuePair<RegionPosition, MapRegion> item in this.Regions)
+			item.Value.PrepareClientRecovery(result, item.Key);
+		return result;
+	}
 }

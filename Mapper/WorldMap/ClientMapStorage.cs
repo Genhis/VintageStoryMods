@@ -12,19 +12,21 @@ public class ClientMapStorage {
 	public readonly Dictionary<FastVec2i, MapChunk> Chunks = [];
 	public readonly DictionaryQueue<FastVec2i, ColorAndZoom> ChunksToRedraw = new();
 
-	public void Load(string filename, ILogger logger) {
+	public bool Load(string filename, ILogger logger) {
 		if(!File.Exists(filename))
-			return;
+			return true;
 
 		try {
 			using VersionedReader input = VersionedReader.Create(new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, SaveLoadExtensions.DefaultBufferSize, FileOptions.SequentialScan), compressed: true);
 			this.Load(input);
 			logger.Notification($"[mapper] Loaded {this.Chunks.Count} chunks out of which {this.ChunksToRedraw.Count} are waiting for refresh");
+			return true;
 		}
 		catch(Exception ex) {
 			logger.Error("[mapper] Failed to load client map storage: " + ex.ToString());
 			this.Chunks.Clear();
 			this.ChunksToRedraw.Clear();
+			return false;
 		}
 	}
 

@@ -57,7 +57,7 @@ public class ItemMap : Item {
 			base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handling);
 			return;
 		}
-		if(!firstEvent)
+		if(!firstEvent || this.api.Side == EnumAppSide.Client && !MapperChunkMapLayer.GetInstance(this.api).CheckEnabledClient())
 			return;
 
 		handling = EnumHandHandling.PreventDefault;
@@ -80,7 +80,8 @@ public class ItemMap : Item {
 		if(byEntity is not EntityPlayer{Player: IServerPlayer player})
 			return;
 
-		MapperChunkMapLayer.GetInstance(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), int.MaxValue, this.availablePixels, this.colorLevel, (byte)(this.GetToolMode(slot, player, blockSel) + this.minZoomLevel));
+		if(MapperChunkMapLayer.GetInstance(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), int.MaxValue, this.availablePixels, this.colorLevel, (byte)(this.GetToolMode(slot, player, blockSel) + this.minZoomLevel)) == this.availablePixels)
+			return;
 		slot.TakeOut(1);
 		slot.MarkDirty();
 	}

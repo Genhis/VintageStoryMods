@@ -8,11 +8,11 @@ using System.Linq;
 using Vintagestory.API.Server;
 
 public class ServerMapStorage : Dictionary<string, ServerPlayerMap> {
-	public void Load(ICoreServerAPI api) {
+	public bool Load(ICoreServerAPI api) {
 		try {
 			byte[] data = api.WorldManager.SaveGame.GetData("mapper:mapregions");
 			if(data == null)
-				return;
+				return true;
 
 			using VersionedReader input = VersionedReader.Create(new MemoryStream(data, false));
 			int count = input.ReadInt32();
@@ -21,10 +21,12 @@ public class ServerMapStorage : Dictionary<string, ServerPlayerMap> {
 				this[input.ReadString()] = new ServerPlayerMap(input);
 
 			api.Logger.Notification($"[mapper] Loaded {this.Count} players having {this.Sum(item => item.Value.Regions.Count)} map regions total");
+			return true;
 		}
 		catch(Exception ex) {
 			api.Logger.Error("[mapper] Failed to load map regions: " + ex.ToString());
 			this.Clear();
+			return false;
 		}
 	}
 

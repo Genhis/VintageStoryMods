@@ -32,6 +32,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	private Vec3d? lastKnownPosition;
 	private float lastThreadUpdateTime;
 
+	private bool enabled = true;
+
 	public override EnumMapAppSide DataSide => EnumMapAppSide.Server;
 
 	public MapperChunkMapLayer(ICoreAPI api, IWorldMapManager mapSink) : base(api, mapSink) {
@@ -39,7 +41,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.serverStorage = [];
 			this.joiningPlayers = [];
 
-			sapi.Event.GameWorldSave += () => this.serverStorage.Save((ICoreServerAPI)this.api);
+			sapi.Event.GameWorldSave += () => {
+				if(this.enabled)
+					this.serverStorage.Save((ICoreServerAPI)this.api);
+			};
 			sapi.Event.PlayerJoin += player => this.joiningPlayers.Add(player.PlayerUID);
 		}
 		else {
@@ -47,8 +52,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.clientStorageFilename = MapperChunkMapLayer.GetClientStorageFilename(api);
 			this.chunksToRedrawLock = new();
 
-			this.clientStorage.Load(this.clientStorageFilename, api.Logger);
+			this.enabled = this.clientStorage.Load(this.clientStorageFilename, api.Logger);
 		}
+
+		this.api.ChatCommands.GetOrCreate("mapper").RequiresPrivilege(Privilege.root).BeginSubCommand("enable").WithDescription(Lang.Get("mapper:commanddesc-mapper-enable")).HandleWith(this.HandleEnableCommand);
 	}
 
 	public override void OnLoaded() {
@@ -59,16 +66,33 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			throw new InvalidOperationException("Another MapperChunkMapLayer instance is already loaded");
 		modSystem.mapLayer = this;
 
-		this.serverStorage?.Load((ICoreServerAPI)this.api);
+		if(this.serverStorage != null)
+			this.enabled = this.serverStorage.Load((ICoreServerAPI)this.api);
 	}
 
 	public override void OnShutDown() {
-		this.clientStorage?.Save(this.clientStorageFilename!, this.api.Logger);
+		if(this.enabled)
+			this.clientStorage?.Save(this.clientStorageFilename!, this.api.Logger);
 		this.api.ModLoader.GetModSystem<MapperModSystem>().mapLayer = null;
 		base.OnShutDown();
 	}
 
+	private TextCommandResult HandleEnableCommand(TextCommandCallingArgs args) {
+		string side = this.api.Side == EnumAppSide.Client ? "client" : "server";
+		if(this.enabled)
+			return TextCommandResult.Error(Lang.Get($"mapper:commandresult-mapper-enable-{side}-error"));
+
+		if(this.api is ICoreClientAPI capi)
+			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = capi.World.Player.PlayerUID, RecoverMap = true}));
+		else
+			this.enabled = true;
+		return TextCommandResult.Success(Lang.Get($"mapper:commandresult-mapper-enable-{side}-success"));
+	}
+
 	public int MarkChunksForRedraw(IServerPlayer player, FastVec2i chunkPosition, int radius, int durability, byte colorLevel, byte zoomLevel, bool forceOverdraw = false) {
+		if(!this.CheckEnabledServer(player))
+			return durability;
+
 		Dictionary<FastVec2i, ColorAndZoom> changes = [];
 		Dictionary<RegionPosition, MapRegion> storedRegions = this.serverStorage![player.PlayerUID].Regions;
 
@@ -109,12 +133,26 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 	public override void OnDataFromClient(byte[] data) {
+		if(!this.enabled)
+			return;
+
 		ClientToServerPacket packet = SerializerUtil.Deserialize<ClientToServerPacket>(data);
-		this.serverStorage![packet.PlayerUID].LastKnownPosition = packet.LastKnownPosition;
+		if(packet.RecoverMap)
+			this.mapSink.SendMapDataToClient(this, (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), SerializerUtil.Serialize(new ServerToClientPacket{Changes = this.serverStorage![packet.PlayerUID].PrepareClientRecovery(), RecoverMap = true}));
+		else
+			this.serverStorage![packet.PlayerUID].LastKnownPosition = packet.LastKnownPosition;
 	}
 
 	public override void OnDataFromServer(byte[] data) {
 		ServerToClientPacket packet = SerializerUtil.Deserialize<ServerToClientPacket>(data);
+		if(packet.RecoverMap) {
+			this.enabled = true;
+			if(packet.Changes == null)
+				return;
+		}
+		if(!this.enabled)
+			return;
+
 		if(packet.Changes == null) {
 			this.lastKnownPosition = packet.LastKnownPosition;
 			if(this.mapSink is WorldMapManager manager)
@@ -214,6 +252,22 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			if(this.clientStorage!.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk))
 				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = chunkPosition, Pixels = mapChunk.Pixels});
 		}
+	}
+
+	public bool CheckEnabledClient() {
+		if(this.enabled)
+			return true;
+
+		((ICoreClientAPI)this.api).TriggerIngameError(this, "mapper-mod-disabled", Lang.Get("mapper:error-mod-disabled-client"));
+		return false;
+	}
+
+	public bool CheckEnabledServer(IServerPlayer player) {
+		if(this.enabled)
+			return true;
+
+		player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.GetL(player.LanguageCode, "mapper:error-mod-disabled-server"), EnumChatType.Notification);
+		return false;
 	}
 
 	public int? GetScaleFactor(IServerPlayer player, FastVec2i chunkPosition) {

@@ -1,6 +1,7 @@
 namespace Mapper.WorldMap;
 
 using Mapper.Util.IO;
+using System.Collections.Generic;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
 
@@ -22,6 +23,16 @@ public readonly struct MapRegion {
 	public readonly void Save(VersionedWriter output) {
 		for(int i = 0; i < Area; ++i)
 			this.data[i].Save(output);
+	}
+
+	public readonly void PrepareClientRecovery(Dictionary<FastVec2i, ColorAndZoom> output, RegionPosition regionPosition) {
+		int chunkOffsetX = regionPosition.X * Size;
+		int chunkOffsetY = regionPosition.Y * Size;
+		for(int i = 0; i < Area; ++i)
+			if(!this.data[i].Empty) {
+				this.data[i] = new ColorAndZoom(0, this.data[i].ZoomLevel); // Reset color level because we don't want players to cheat by corrupting their storage on purpose.
+				output[new FastVec2i(chunkOffsetX + i % Size, chunkOffsetY + i / Size)] = this.data[i];
+			}
 	}
 
 	/// <returns>New zoom level if something was changed.</returns>
