@@ -1,5 +1,6 @@
 namespace Mapper.WorldMap;
 
+using Mapper.Behaviors;
 using Mapper.Util;
 using Mapper.Util.Reflection;
 using System;
@@ -305,10 +306,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 	public int? GetScaleFactor(IClientPlayer? player, FastVec2i chunkPosition) {
-		static int? GetCompassScaleFactor(ItemSlot slot) {
-			JsonObject? compassZoomLevel = slot.Itemstack?.ItemAttributes?["mapper"]["compassZoomLevel"];
-			return compassZoomLevel != null && compassZoomLevel.Exists ? 1 << Math.Clamp(compassZoomLevel.AsInt(1), 0, 30) : null;
-		}
+		static int? GetCompassScaleFactor(ItemSlot slot) => BehaviorCompassNeedle.GetScaleFactor(slot.Itemstack?.ItemAttributes);
 
 		int? scaleFactor = this.clientStorage!.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk) ? 1 << mapChunk.ZoomLevel : null;
 		if(player != null)

@@ -1,17 +1,20 @@
 namespace Mapper;
 
 using HarmonyLib;
+using Mapper.Behaviors;
 using Mapper.Items;
 using Mapper.Util.IO;
 using Mapper.Util.Reflection;
 using Mapper.WorldMap;
 using System;
+using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.GameContent;
 
 public class MapperModSystem : ModSystem {
 	private static bool enabled = true;
 	private Harmony? harmony;
+	private CompassNeedleUpdater? compassNeedleUpdater;
 	internal MapperChunkMapLayer? mapLayer;
 
 	public override void Start(ICoreAPI api) {
@@ -23,9 +26,19 @@ public class MapperModSystem : ModSystem {
 			this.PatchCode();
 
 		if(MapperModSystem.enabled) {
+			this.Mod.Logger.Notification("Registering new classes");
 			api.ModLoader.GetModSystem<WorldMapManager>().RegisterMapLayer<MapperChunkMapLayer>("chunks", 0);
+			api.RegisterCollectibleBehaviorClass("MapperCompassNeedle", typeof(BehaviorCompassNeedle));
 			api.RegisterItemClass("MapperMap", typeof(ItemMap));
 			api.RegisterItemClass("MapperPaintbrush", typeof(ItemPaintbrush));
+		}
+	}
+
+	public override void StartClientSide(ICoreClientAPI api) {
+		base.StartClientSide(api);
+		if(MapperModSystem.enabled) {
+			this.Mod.Logger.Notification("Registering OnTick handler for compass updates");
+			this.compassNeedleUpdater = new CompassNeedleUpdater(api);
 		}
 	}
 
@@ -57,6 +70,10 @@ public class MapperModSystem : ModSystem {
 			this.Mod.Logger.Notification("Unpatching code");
 			this.harmony.UnpatchAll(this.harmony.Id);
 			this.harmony = null;
+		}
+		if(this.compassNeedleUpdater != null) {
+			this.compassNeedleUpdater.Dispose();
+			this.compassNeedleUpdater = null;
 		}
 		base.Dispose();
 	}

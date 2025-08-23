@@ -12,19 +12,6 @@
 	},
 	"elements": [
 		{
-			"name": "CompassNeedle",
-			"from": [8.0, 1.2, 7.8],
-			"to": [10.0, 1.4, 8.2],
-			"rotationOrigin": [8.0, 1.2, 8.0],
-			"rotationY": 45.0,
-			"faces": {
-				"north": {"texture": "#compass", "uv": [2.0, 13.5, 7.0, 14.0], "rotation": 180, "autoUv": false},
-				"east": {"texture": "#compass", "uv": [7.0, 14.0, 7.5, 15.0], "rotation": 90, "autoUv": false},
-				"south": {"texture": "#compass", "uv": [2.0, 15.0, 7.0, 15.5], "autoUv": false},
-				"up": {"texture": "#compass", "uv": [2.0, 14.0, 7.0, 15.0], "autoUv": false}
-			}
-		},
-		{
 			"name": "Base",
 			"from": [5.5, 0.0, 5.5],
 			"to": [10.5, 1.0, 10.5],

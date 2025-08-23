@@ -1,0 +1,27 @@
+{
+	"editor": {
+		"allAngles": false,
+		"entityTextureMode": false
+	},
+	"textureWidth": 16,
+	"textureHeight": 16,
+	"textures": {
+		"ceramic": "game:block/clay/ceramic",
+		"compass": "item/compass"
+	},
+	"elements": [
+		{
+			"name": "CompassNeedle",
+			"from": [6.75, 1.0, 7.75],
+			"to": [9.25, 1.5, 8.25],
+			"rotationOrigin": [8.0, 1.0, 8.0],
+			"rotationY": 45.0,
+			"faces": {
+				"north": {"texture": "#compass", "uv": [13.0, 10.0, 14.0, 15.0], "rotation": 270, "autoUv": false},
+				"east": {"texture": "#compass", "uv": [14.0, 9.0, 15.0, 10.0], "rotation": 180, "autoUv": false},
+				"south": {"texture": "#compass", "uv": [15.0, 10.0, 16.0, 15.0], "rotation": 90, "autoUv": false},
+				"west": {"texture": "#compass", "uv": [14.0, 15.0, 15.0, 16.0], "autoUv": false},
+				"up": {"texture": "#compass", "uv": [14.0, 10.0, 15.0, 15.0], "rotation": 90, "autoUv": false}
+			}
+		}
+	]}

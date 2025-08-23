@@ -22,6 +22,16 @@
 					"x2": 1, "y2": 0.2, "z2": 1
 				}
 			}
+		},
+		{
+			"name": "MapperCompassNeedle",
+			"properties": {
+				"needleShape": {"base": "item/compass-precise-needle"},
+				"resolution": 90,
+				"rotationOffset": -135,
+				"springDampingRatio": 0.4,
+				"springFrequency": 1.5
+			}
 		}
 	],
 	"shape": {"base": "item/compass-precise"},
