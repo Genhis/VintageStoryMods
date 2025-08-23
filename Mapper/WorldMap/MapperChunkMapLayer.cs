@@ -17,6 +17,7 @@ using Vintagestory.API.Util;
 using Vintagestory.GameContent;
 
 public class MapperChunkMapLayer : ChunkMapLayer {
+	private const int ClientAutosaveTime = 60 * 5;
 	private static readonly FieldAccessor<ChunkMapLayer, UniqueQueue<FastVec2i>> chunksToGen = new("chunksToGen");
 	private static readonly FieldAccessor<ChunkMapLayer, object> chunksToGenLock = new("chunksToGenLock");
 	private static readonly FieldAccessor<ChunkMapLayer, ConcurrentQueue<ReadyMapPiece>> readyMapPieces = new("readyMapPieces");
@@ -31,7 +32,9 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	private readonly object? chunksToRedrawLock;
 	private Vec3d? lastKnownPosition;
 	private float lastThreadUpdateTime;
+	private float clientAutosaveTimer;
 
+	private bool dirty;
 	private bool enabled = true;
 
 	public override EnumMapAppSide DataSide => EnumMapAppSide.Server;
@@ -42,8 +45,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.joiningPlayers = [];
 
 			sapi.Event.GameWorldSave += () => {
-				if(this.enabled)
-					this.serverStorage.Save((ICoreServerAPI)this.api);
+				if(this.dirty)
+					this.dirty = this.serverStorage.Save((ICoreServerAPI)this.api);
 			};
 			sapi.Event.PlayerJoin += player => this.joiningPlayers.Add(player.PlayerUID);
 		}
@@ -71,8 +74,11 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 	public override void OnShutDown() {
-		if(this.enabled)
-			this.clientStorage?.Save(this.clientStorageFilename!, this.api.Logger);
+		if(this.clientStorage != null) {
+			if(this.dirty)
+				this.clientStorage.Save(this.clientStorageFilename!, this.api.Logger, ref this.dirty);
+			this.clientStorage.Dispose();
+		}
 		this.api.ModLoader.GetModSystem<MapperModSystem>().mapLayer = null;
 		base.OnShutDown();
 	}
@@ -109,8 +115,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 				break;
 		}
 
-		if(changes.Count > 0)
+		if(changes.Count > 0) {
+			this.dirty = true;
 			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Changes = changes}));
+		}
 		return durability;
 	}
 
@@ -139,8 +147,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		ClientToServerPacket packet = SerializerUtil.Deserialize<ClientToServerPacket>(data);
 		if(packet.RecoverMap)
 			this.mapSink.SendMapDataToClient(this, (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), SerializerUtil.Serialize(new ServerToClientPacket{Changes = this.serverStorage![packet.PlayerUID].PrepareClientRecovery(), RecoverMap = true}));
-		else
+		else {
+			this.dirty = true;
 			this.serverStorage![packet.PlayerUID].LastKnownPosition = packet.LastKnownPosition;
+		}
 	}
 
 	public override void OnDataFromServer(byte[] data) {
@@ -167,6 +177,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 	private void UpdateChunks(Dictionary<FastVec2i, ColorAndZoom> changes) {
 		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
+		using IDisposable guard = this.clientStorage!.SaveLock.SharedLock();
+		this.dirty = true;
 		foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in changes) {
 			if(!this.clientStorage!.Chunks.ContainsKey(item.Key) || item.Value.Color == 0) {
 				this.clientStorage.Chunks[item.Key] = new MapChunk();
@@ -186,6 +198,14 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	public override void OnOffThreadTick(float dt) {
 		if(this.api.Side == EnumAppSide.Server)
 			return;
+
+		if(this.dirty) {
+			this.clientAutosaveTimer += dt;
+			if(this.clientAutosaveTimer > MapperChunkMapLayer.ClientAutosaveTime) {
+				this.clientAutosaveTimer = 0;
+				this.clientStorage!.Save(this.clientStorageFilename!, this.api.Logger, ref this.dirty);
+			}
+		}
 
 		this.lastThreadUpdateTime += dt;
 		if(this.lastThreadUpdateTime < 0.1)
@@ -209,9 +229,14 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 	private void CheckChunksToRedraw() {
+		int count = this.clientStorage!.ChunksToRedraw.Count;
+		if(count == 0)
+			return;
+
 		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
 		IBlockAccessor blockAccessor = this.api.World.BlockAccessor;
-		for(int count = this.clientStorage!.ChunksToRedraw.Count; count > 0 && !this.mapSink.IsShuttingDown; --count) {
+		using IDisposable guard = this.clientStorage.SaveLock.SharedLock();
+		for(; count > 0 && !this.mapSink.IsShuttingDown; --count) {
 			KeyValuePair<FastVec2i, ColorAndZoom> redrawRequest;
 			lock(this.chunksToRedrawLock!) {
 				if(this.clientStorage.ChunksToRedraw.Count == 0)
@@ -231,6 +256,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			if(redrawRequest.Value.ZoomLevel > 0)
 				MapperChunkMapLayer.ApplyBoxFilter(pixels, redrawRequest.Value.ZoomLevel);
 
+			this.dirty = true;
 			this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, redrawRequest.Value.ZoomLevel);
 			readyMapPieces.Enqueue(new ReadyMapPiece{Cord = redrawRequest.Key, Pixels = pixels});
 		}

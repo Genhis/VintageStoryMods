@@ -30,7 +30,7 @@ public class ServerMapStorage : Dictionary<string, ServerPlayerMap> {
 		}
 	}
 
-	public void Save(ICoreServerAPI api) {
+	public bool Save(ICoreServerAPI api) {
 		try {
 			using MemoryStream stream = new();
 			using(VersionedWriter output = VersionedWriter.Create(stream, leaveOpen: true)) {
@@ -41,9 +41,11 @@ public class ServerMapStorage : Dictionary<string, ServerPlayerMap> {
 				}
 			}
 			api.WorldManager.SaveGame.StoreData("mapper:mapregions", stream.ToArray());
+			return true;
 		}
 		catch(Exception ex) {
 			api.Logger.Error("[mapper] Failed to save map regions:" + ex.ToString());
+			return false;
 		}
 	}
 }

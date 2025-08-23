@@ -5,12 +5,18 @@ using Mapper.Util.IO;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 
-public class ClientMapStorage {
+public class ClientMapStorage : IDisposable {
 	public readonly Dictionary<FastVec2i, MapChunk> Chunks = [];
 	public readonly DictionaryQueue<FastVec2i, ColorAndZoom> ChunksToRedraw = new();
+	public readonly ReaderWriterLockSlim SaveLock = new();
+
+	public void Dispose() {
+		this.SaveLock.Dispose();
+	}
 
 	public bool Load(string filename, ILogger logger) {
 		if(!File.Exists(filename))
@@ -42,17 +48,19 @@ public class ClientMapStorage {
 			this.ChunksToRedraw.Enqueue(new KeyValuePair<FastVec2i, ColorAndZoom>(input.ReadFastVec2i(), new ColorAndZoom(input)));
 	}
 
-	public void Save(string filename, ILogger logger) {
+	public void Save(string filename, ILogger logger, ref bool dirtyFlag) {
 		try {
 			using VersionedWriter output = VersionedWriter.Create(new FileStream(filename, FileMode.Create, FileAccess.Write, FileShare.None, SaveLoadExtensions.DefaultBufferSize), compressed: true);
-			this.Save(output);
+			this.Save(output, ref dirtyFlag);
 		}
 		catch(Exception ex) {
 			logger.Error("[mapper] Failed to save client map storage: " + ex.ToString());
+			dirtyFlag = true;
 		}
 	}
 
-	public void Save(VersionedWriter output) {
+	public void Save(VersionedWriter output, ref bool dirtyFlag) {
+		using IDisposable guard = this.SaveLock.ExclusiveLock();
 		output.Write(this.Chunks.Count);
 		foreach(KeyValuePair<FastVec2i, MapChunk> item in this.Chunks) {
 			output.Write(item.Key);
@@ -64,5 +72,6 @@ public class ClientMapStorage {
 			output.Write(item.Key);
 			item.Value.Save(output);
 		}
+		dirtyFlag = false;
 	}
 }
