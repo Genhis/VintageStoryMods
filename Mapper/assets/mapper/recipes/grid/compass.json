@@ -1,0 +1,39 @@
+[
+	{
+		"width": 2,
+		"height": 2,
+		"ingredientPattern": "NC,_B",
+		"ingredients": {
+			"N": {"type": "item", "code": "game:gear-rusty"},
+			"C": {"type": "item", "code": "game:stick"},
+			"B": {"type": "block", "code": "game:bowl-*-fired", "name": "color"}
+		},
+		"output": {"type": "item", "code": "compass-primitive-{color}"}
+	},
+	{
+		"name": "compass-precise",
+		"width": 2,
+		"height": 3,
+		"ingredientPattern": "_G,NC,_B",
+		"ingredients": {
+			"G": {"type": "item", "code": "game:clearquartz"},
+			"N": {"type": "item", "code": "game:nugget-*", "allowedVariants": ["magnetite", "hematite", "limonite"]},
+			"C": {"type": "item", "code": "game:metalnailsandstrips-*", "allowedVariants": ["copper", "tinbronze", "bismuthbronze", "blackbronze", "silver", "gold"]},
+			"B": {"type": "item", "code": "compassbase-*", "name": "metal"}
+		},
+		"output": {"type": "item", "code": "compass-precise-{metal}"}
+	},
+	{
+		"name": "compass-precise",
+		"width": 2,
+		"height": 3,
+		"ingredientPattern": "_G,NC,_B",
+		"ingredients": {
+			"G": {"type": "block", "code": "game:glassslab-plain-down-free"},
+			"N": {"type": "item", "code": "game:nugget-*", "allowedVariants": ["magnetite", "hematite", "limonite"]},
+			"C": {"type": "item", "code": "game:metalnailsandstrips-*", "allowedVariants": ["copper", "tinbronze", "bismuthbronze", "blackbronze", "silver", "gold"]},
+			"B": {"type": "item", "code": "compassbase-*", "name": "metal"}
+		},
+		"output": {"type": "item", "code": "compass-precise-{metal}"}
+	}
+]

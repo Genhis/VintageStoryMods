@@ -1,0 +1,20 @@
+{
+	"ingredient": {"type": "item", "code": "game:ingot-*", "name": "metal", "allowedVariants": ["copper", "tinbronze", "bismuthbronze", "blackbronze", "brass", "silver", "gold", "molybdochalkos"]},
+	"pattern": [
+		[
+			"_###_",
+			"#####",
+			"#####",
+			"#####",
+			"_###_"
+		],
+		[
+			"_###_",
+			"##_##",
+			"#___#",
+			"##_##",
+			"_###_"
+		]
+	],
+	"output": {"type": "item", "code": "compassbase-{metal}"}
+}

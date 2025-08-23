@@ -8,6 +8,7 @@
 	"maxstacksize": 16,
 	"storageFlags": 257,
 	"attributes": {
+		"handbook": {"groupBy": ["compass-primitive-*"]},
 		"mapper": {
 			"compassZoomLevel": 5
 		}

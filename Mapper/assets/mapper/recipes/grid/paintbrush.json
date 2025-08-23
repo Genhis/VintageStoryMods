@@ -1,0 +1,13 @@
+[
+	{
+		"width": 1,
+		"height": 3,
+		"ingredientPattern": "GFS",
+		"ingredients": {
+			"G": {"type": "item", "code": "game:drygrass"},
+			"F": {"type": "item", "code": "game:flaxfibers"},
+			"S": {"type": "item", "code": "game:stick"}
+		},
+		"output": {"type": "item", "code": "paintbrush"}
+	}
+]
