@@ -2,6 +2,7 @@ namespace Mapper.Patches;
 
 using HarmonyLib;
 using Mapper.Util;
+using Mapper.Util.Harmony;
 using Mapper.Util.Reflection;
 using Mapper.WorldMap;
 using System;

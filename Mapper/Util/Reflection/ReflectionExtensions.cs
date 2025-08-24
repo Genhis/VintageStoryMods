@@ -11,6 +11,10 @@ public static class ReflectionExtensions {
 		return string.Join(", ", new List<Type>(args).ConvertAll(item => item.Name));
 	}
 
+	public static Type GetCheckedType(this Assembly assembly, string name) {
+		return assembly.GetType(name) ?? throw new InvalidOperationException($"Type does not exist: {name} in {assembly.FullName}");
+	}
+
 	public static ConstructorInfo GetCheckedConstructor(this Type type, Type[] args) {
 		return type.GetConstructor(BindingFlagsAccess | BindingFlags.Instance, args) ?? throw new InvalidOperationException($"Constructor does not exist: {type.Name}({args.JoinNames()})");
 	}
@@ -23,7 +27,9 @@ public static class ReflectionExtensions {
 		return type.GetField(name, BindingFlagsAccess | instanceFlag) ?? throw new InvalidOperationException($"Field does not exist: {type.Name}.{name}");
 	}
 
-	public static MethodInfo GetCheckedMethod(this Type type, string name, BindingFlags instanceFlag, Type[] args) {
+	public static MethodInfo GetCheckedMethod(this Type type, string name, BindingFlags instanceFlag, Type[]? args) {
+		if(args == null)
+			return type.GetMethod(name, BindingFlagsAccess | instanceFlag) ?? throw new InvalidOperationException($"Method does not exist: {type.Name}.{name}(...)");
 		return type.GetMethod(name, BindingFlagsAccess | instanceFlag, args) ?? throw new InvalidOperationException($"Method does not exist: {type.Name}.{name}({args.JoinNames()})");
 	}
 
@@ -37,5 +43,9 @@ public static class ReflectionExtensions {
 
 	public static MethodInfo CheckedGetMethod(this PropertyInfo property) {
 		return property.GetMethod ?? throw new InvalidOperationException($"Property does not have a getter: {property.DeclaringType!.Name}.{property.Name}");
+	}
+
+	public static string GetParentAndName(this MethodInfo method, Type[]? args = null) {
+		return $"{method.DeclaringType!.Name}.{method.Name}({(args == null ? "..." : args.JoinNames())})";
 	}
 }

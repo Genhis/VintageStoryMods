@@ -3,6 +3,7 @@ namespace Mapper;
 using HarmonyLib;
 using Mapper.Behaviors;
 using Mapper.Items;
+using Mapper.Util.Harmony;
 using Mapper.Util.IO;
 using Mapper.Util.Reflection;
 using Mapper.WorldMap;
@@ -53,6 +54,7 @@ public class MapperModSystem : ModSystem {
 		this.harmony = new Harmony(this.Mod.Info.ModID);
 		try {
 			this.harmony.PatchAll();
+			this.harmony.PatchDynamic(this.Mod.Logger);
 
 			this.Mod.Logger.Notification("Testing save/load consistency");
 			SaveLoadTests.Run();
