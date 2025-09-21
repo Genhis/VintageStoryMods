@@ -31,6 +31,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	private readonly ClientMapStorage? clientStorage;
 	private readonly string? clientStorageFilename;
 	private readonly object? chunksToRedrawLock;
+	private MapBackground? background;
 	private Vec3d? lastKnownPosition;
 	private float lastThreadUpdateTime;
 	private float clientAutosaveTimer;
@@ -55,8 +56,6 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.clientStorage = new ClientMapStorage();
 			this.clientStorageFilename = MapperChunkMapLayer.GetClientStorageFilename(api);
 			this.chunksToRedrawLock = new();
-
-			this.enabled = this.clientStorage.Load(this.clientStorageFilename, api.Logger);
 		}
 
 		this.api.ChatCommands.GetOrCreate("mapper").RequiresPrivilege(Privilege.root).BeginSubCommand("enable").WithDescription(Lang.Get("mapper:commanddesc-mapper-enable")).HandleWith(this.HandleEnableCommand);
@@ -72,6 +71,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 		if(this.serverStorage != null)
 			this.enabled = this.serverStorage.Load((ICoreServerAPI)this.api);
+		else {
+			this.background = new MapBackground((ICoreClientAPI)this.api, "mapper:textures/map.png");
+			this.enabled = this.clientStorage!.Load(this.clientStorageFilename!, this.api.Logger, this.background);
+		}
 	}
 
 	public override void OnShutDown() {
@@ -182,8 +185,9 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		this.dirty = true;
 		foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in changes) {
 			if(!this.clientStorage!.Chunks.ContainsKey(item.Key) || item.Value.Color == 0) {
-				this.clientStorage.Chunks[item.Key] = new MapChunk();
-				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = item.Key, Pixels = MapChunk.UnexploredPixels});
+				int[] pixels = this.background!.GetPixels(item.Key, item.Value.ZoomLevel);
+				this.clientStorage.Chunks[item.Key] = new MapChunk(pixels, item.Value.ZoomLevel, true);
+				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = item.Key, Pixels = pixels});
 			}
 			if(item.Value.Color > 0)
 				this.clientStorage.ChunksToRedraw.Enqueue(item);
@@ -253,12 +257,12 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 				continue;
 			}
 			if(redrawRequest.Value.Color == 1)
-				MapperChunkMapLayer.ConvertToGrayscale(pixels, (uint)this.colorsByCode.Get("ocean", 0) | 0xFF000000);
+				MapperChunkMapLayer.ConvertToGrayscale(pixels, this.background!.GetPixels(redrawRequest.Key, redrawRequest.Value.ZoomLevel), (uint)this.colorsByCode.Get("ocean", 0) | 0xFF000000);
 			if(redrawRequest.Value.ZoomLevel > 0)
 				MapperChunkMapLayer.ApplyBoxFilter(pixels, redrawRequest.Value.ZoomLevel);
 
 			this.dirty = true;
-			this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, redrawRequest.Value.ZoomLevel);
+			this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, redrawRequest.Value.ZoomLevel, false);
 			readyMapPieces.Enqueue(new ReadyMapPiece{Cord = redrawRequest.Key, Pixels = pixels});
 		}
 	}
@@ -341,10 +345,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		return MapperChunkMapLayer.GetInstance(api).lastKnownPosition != null;
 	}
 
-	private static void ConvertToGrayscale(int[] pixels, uint oceanColor) {
-		const uint paperColor = 0xFF98CCDC;
+	private static void ConvertToGrayscale(int[] pixels, int[] paperPixels, uint oceanColor) {
 		for(int i = 0; i < pixels.Length; ++i) {
 			uint color = (uint)pixels[i];
+			uint paperColor = (uint)paperPixels[i];
 			float alpha = color == oceanColor ? 1 : ((color & 0xFF) * 0.29891f + ((color >> 8) & 0xFF) * 0.58661f + ((color >> 16) & 0xFF) * 0.11448f) / 255f;
 			uint r = (byte)(alpha * (paperColor & 0xFF));
 			uint g = (byte)(alpha * ((paperColor >> 8) & 0xFF));

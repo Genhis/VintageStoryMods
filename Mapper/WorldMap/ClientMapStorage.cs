@@ -18,13 +18,13 @@ public class ClientMapStorage : IDisposable {
 		this.SaveLock.Dispose();
 	}
 
-	public bool Load(string filename, ILogger logger) {
+	public bool Load(string filename, ILogger logger, MapBackground background) {
 		if(!File.Exists(filename))
 			return true;
 
 		try {
 			using VersionedReader input = VersionedReader.Create(new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, SaveLoadExtensions.DefaultBufferSize, FileOptions.SequentialScan), compressed: true);
-			this.Load(input);
+			this.Load(input, background);
 			logger.Notification($"[mapper] Loaded {this.Chunks.Count} chunks out of which {this.ChunksToRedraw.Count} are waiting for refresh");
 			return true;
 		}
@@ -36,11 +36,13 @@ public class ClientMapStorage : IDisposable {
 		}
 	}
 
-	public void Load(VersionedReader input) {
+	public void Load(VersionedReader input, MapBackground background) {
 		int count = input.ReadInt32();
 		this.Chunks.EnsureCapacity(Math.Min(count, SaveLoadExtensions.MaxInitialContainerSize));
-		for(int i = 0; i < count; ++i)
-			this.Chunks[input.ReadFastVec2i()] = new MapChunk(input);
+		for(int i = 0; i < count; ++i) {
+			FastVec2i chunkPosition = input.ReadFastVec2i();
+			this.Chunks[chunkPosition] = new MapChunk(input, chunkPosition, background);
+		}
 
 		count = input.ReadInt32();
 		this.ChunksToRedraw.EnsureCapacity(Math.Min(count, SaveLoadExtensions.MaxInitialContainerSize));
