@@ -7,7 +7,7 @@
 	"version": "0.1.0",
 	"website": "https://github.com/Genhis/VintageStoryMods",
 	"dependencies": {
-		"game": "1.21.0-rc.1",
-		"survival": "1.21.0-rc.1"
+		"game": "1.21.0",
+		"survival": "1.21.0"
 	}
 }
