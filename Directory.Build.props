@@ -10,7 +10,7 @@
 	</PropertyGroup>
 	<PropertyGroup>
 		<Company></Company>
-		<Copyright>© 2025 Genhis</Copyright>
+		<Copyright>© $([System.DateTime]::Now.Year) Genhis</Copyright>
 		<Description>Vintage Story game mod</Description>
 		<Version Condition="$([System.IO.File]::Exists('$(MSBuildProjectDirectory)/modinfo.json'))">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/modinfo.json')), '"version": "([0-9.]+)"').Groups[1].Value)</Version>
 	</PropertyGroup>

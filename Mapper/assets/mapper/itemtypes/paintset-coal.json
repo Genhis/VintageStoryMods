@@ -10,7 +10,8 @@
 		"mapper": {
 			"colorLevel": 1,
 			"minRange": 0,
-			"maxRange": 4,
+			"maxRange": 8,
+			"stepRange": 2,
 			"upgradeMode": false,
 			"interactionData": {
 				"duration": 1,

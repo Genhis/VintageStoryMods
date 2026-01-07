@@ -5,7 +5,8 @@
 	"attributes": {
 		"mapper": {
 			"minRange": 0,
-			"maxRange": 4,
+			"maxRange": 8,
+			"stepRange": 2,
 			"interactionData": {
 				"duration": 2,
 				"animationName": "mapper:paint",
