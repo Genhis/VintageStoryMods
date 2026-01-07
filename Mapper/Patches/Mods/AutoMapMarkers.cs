@@ -7,8 +7,6 @@ using Mapper.WorldMap;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-using Vintagestory.API.Common;
-using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 
@@ -39,9 +37,10 @@ internal static class AutoMapMarkers {
 	}
 
 	internal static bool AddWaypointInsert(IServerPlayer player, Vec3d position) {
-		int? scaleFactor = MapperChunkMapLayer.GetInstance(player.Entity.Api).GetScaleFactor(player, new FastVec2i((int)position.X / 32, (int)position.Z / 32));
+		MapperChunkMapLayer layer = MapperChunkMapLayer.GetInstance(player.Entity.Api);
+		int? scaleFactor = layer.GetScaleFactor(player, new FastVec2i((int)position.X / 32, (int)position.Z / 32));
 		if(scaleFactor == null) {
-			player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.GetL(player.LanguageCode, "mapper:error-unexplored-map"), EnumChatType.Notification);
+			layer.TrySendUnrevealedMapMessage(player);
 			return false;
 		}
 

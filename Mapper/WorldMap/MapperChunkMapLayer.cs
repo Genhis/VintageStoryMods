@@ -327,6 +327,16 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		return MapperChunkMapLayer.ClampPosition(entityPos.XYZ, this.GetScaleFactor(player, entityPos.ToChunkPosition()) ?? 1);
 	}
 
+	public void TrySendUnrevealedMapMessage(IServerPlayer player) {
+		ServerPlayerMap playerData = this.serverStorage![player.PlayerUID];
+		long elapsedTime = player.Entity.World.ElapsedMilliseconds;
+		if(playerData.NextUnrevealedMapMessage > elapsedTime)
+			return;
+
+		playerData.NextUnrevealedMapMessage = elapsedTime + 10000;
+		player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.GetL(player.LanguageCode, "mapper:error-unexplored-map"), EnumChatType.Notification);
+	}
+
 	public static MapperChunkMapLayer GetInstance(ICoreAPI api) {
 		return api.ModLoader.GetModSystem<MapperModSystem>().mapLayer!;
 	}

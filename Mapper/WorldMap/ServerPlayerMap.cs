@@ -8,6 +8,7 @@ using Vintagestory.API.MathTools;
 public class ServerPlayerMap {
 	public readonly Dictionary<RegionPosition, MapRegion> Regions = [];
 	public Vec3d? LastKnownPosition;
+	public long NextUnrevealedMapMessage; // intentionally not saved
 
 	public ServerPlayerMap() {}
 
