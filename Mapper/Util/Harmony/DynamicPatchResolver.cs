@@ -31,6 +31,8 @@ internal class DynamicPatchResolver(Harmony harmony, ILogger logger) {
 			if(!this.TryGetTargetType(targetClassAssembly, attribute.TypeName, out Type? targetClassType))
 				continue;
 
+			if(targetClassAssembly != null)
+				type.GetField("assembly", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)?.SetValue(null, targetClassAssembly);
 			foreach(MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
 				this.CheckPatchMethod(targetClassAssembly, targetClassType, method);
 		}
