@@ -1,0 +1,55 @@
+{
+	"code": "paintset",
+	"class": "MapperPaintbrush",
+	"variantgroups": [
+		{"code": "tier", "states": ["coal"]}
+	],
+	"creativeinventory": {"general": ["*"], "items": ["*"]},
+	"durability": 512,
+	"attributes": {
+		"mapper": {
+			"colorLevel": 1,
+			"minRange": 0,
+			"maxRange": 8,
+			"stepRange": 2,
+			"upgradeMode": false,
+			"interactionData": {
+				"duration": 1,
+				"animationName": "holdbothhands",
+				"successSound": "sounds/paintbrush-success"
+			}
+		}
+	},
+	"behaviors": [
+		{
+			"name": "GroundStorable",
+			"properties": {
+				"layout": "Quadrants",
+				"collisionBox": {
+					"x1": 0, "y1": 0, "z1": 0,
+					"x2": 1, "y2": 0.5, "z2": 1
+				}
+			}
+		}
+	],
+	"shape": {"base": "item/coal-bag"},
+	"guiTransform": {
+		"translation": {"x": 2, "y": 1, "z": 0},
+		"rotation": {"x": -20, "y": 35, "z": -180},
+		"origin": {"x": 0.5, "y": 0.24, "z": 0.5},
+		"scale": 2.5,
+		"rotate": true
+	},
+	"tpHandTransform": {
+		"translation": {"x": -0.575, "y": -0.5, "z": -0.725},
+		"rotation": {"x": 0, "y": 0, "z": -20},
+		"origin": {"x": 0.5, "y": 0, "z": 0.5},
+		"scale": 0.7
+	},
+	"groundTransform": {
+		"translation": {"x": 0, "y": 0.15, "z": 0},
+		"rotation": {"x": 90, "y": 0, "z": 0},
+		"origin": {"x": 0.5, "y": 0, "z": 0.5},
+		"scale": 4
+	}
+}

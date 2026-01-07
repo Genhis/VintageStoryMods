@@ -1,0 +1,56 @@
+[
+	{
+		"code": "pigment-brown",
+		"shape": {"base": "block/food/meal/liquid"},
+		"perishableProps": {
+			"type": "None",
+			"transitionedStack": {"type": "item", "code": "pigment-brown"}
+		},
+		"ingredients": [
+			{
+				"code": "dye",
+				"validStacks": [{"type": "item", "code": "game:strongtanninportion", "shapeElement": "bowl/water"}],
+				"minQuantity": 1,
+				"maxQuantity": 1,
+				"portionSizeLitres": 1
+			}
+		],
+		"cooksInto": {"type": "Item", "code": "pigment-brown", "quantity": 1}
+	},
+	{
+		"code": "pigment-green",
+		"shape": {"base": "block/food/meal/liquid"},
+		"perishableProps": {
+			"type": "None",
+			"transitionedStack": {"type": "item", "code": "pigment-green"}
+		},
+		"ingredients": [
+			{
+				"code": "dye",
+				"validStacks": [{"type": "item", "code": "game:dye-green", "shapeElement": "bowl/water"}],
+				"minQuantity": 1,
+				"maxQuantity": 1,
+				"portionSizeLitres": 1
+			}
+		],
+		"cooksInto": {"type": "Item", "code": "pigment-green", "quantity": 1}
+	},
+	{
+		"code": "pigment-yellow",
+		"shape": {"base": "block/food/meal/liquid"},
+		"perishableProps": {
+			"type": "None",
+			"transitionedStack": {"type": "item", "code": "pigment-yellow"}
+		},
+		"ingredients": [
+			{
+				"code": "dye",
+				"validStacks": [{"type": "item", "code": "game:dye-yellow", "shapeElement": "bowl/water"}],
+				"minQuantity": 1,
+				"maxQuantity": 1,
+				"portionSizeLitres": 1
+			}
+		],
+		"cooksInto": {"type": "Item", "code": "pigment-yellow", "quantity": 1}
+	}
+]

@@ -1,0 +1,13 @@
+{
+	"type": "code",
+	"modid": "mapper",
+	"name": "Mapper",
+	"authors": ["Genhis"],
+	"description": "Adds map drawing mechanic - map no longer updates automatically and costs resources.",
+	"version": "0.1.0",
+	"website": "https://github.com/Genhis/VintageStoryMods",
+	"dependencies": {
+		"game": "1.21.0",
+		"survival": "1.21.0"
+	}
+}

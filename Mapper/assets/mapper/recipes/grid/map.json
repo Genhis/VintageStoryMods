@@ -1,0 +1,24 @@
+[
+	{
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "PPP,PCD,PPP",
+		"ingredients": {
+			"C": {"type": "item", "code": "compass-primitive-*"},
+			"D": {"type": "item", "code": "game:charcoal"},
+			"P": {"type": "item", "code": "game:paper-*"}
+		},
+		"output": {"type": "item", "code": "map-primitive-coal", "quantity": 8}
+	},
+	{
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "PPP,PCD,PPP",
+		"ingredients": {
+			"C": {"type": "item", "code": "compass-precise-*"},
+			"D": {"type": "item", "code": "game:charcoal", "quantity": 4},
+			"P": {"type": "item", "code": "game:paper-*", "quantity": 2}
+		},
+		"output": {"type": "item", "code": "map-precise-coal", "quantity": 8}
+	}
+]

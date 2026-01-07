@@ -1,0 +1,77 @@
+[
+	{
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "_R_,SCS,SSS",
+		"ingredients": {
+			"C": {"type": "item", "code": "game:charcoal", "quantity": 8},
+			"R": {"type": "item", "code": "game:rope"},
+			"S": {"type": "item", "code": "game:stick"}
+		},
+		"output": {"type": "item", "code": "paintset-coal"}
+	},
+	{
+		"name": "paintset-vintage",
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "AB_,DE_,GPP",
+		"ingredients": {
+			"A": {"type": "item", "code": "pigment-yellow", "quantity": 2},
+			"B": {"type": "item", "code": "game:powder-borax", "quantity": 2},
+			"D": {"type": "item", "code": "pigment-green", "quantity": 2},
+			"E": {"type": "item", "code": "pigment-brown", "quantity": 2},
+			"G": {"type": "item", "code": "game:fat"},
+			"P": {"type": "item", "code": "game:plank-*"}
+		},
+		"output": {"type": "item", "code": "paintset-vintage"}
+	},
+	{
+		"name": "paintset-vintage",
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "AB_,DE_,GPP",
+		"ingredients": {
+			"A": {"type": "item", "code": "pigment-yellow", "quantity": 2},
+			"B": {"type": "item", "code": "game:lime", "quantity": 4},
+			"D": {"type": "item", "code": "pigment-green", "quantity": 2},
+			"E": {"type": "item", "code": "pigment-brown", "quantity": 2},
+			"G": {"type": "item", "code": "game:fat"},
+			"P": {"type": "item", "code": "game:plank-*"}
+		},
+		"output": {"type": "item", "code": "paintset-vintage"}
+	},
+	{
+		"name": "paintset-colorful",
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "ABC,DEF,GPP",
+		"ingredients": {
+			"A": {"type": "item", "code": "pigment-yellow", "quantity": 4},
+			"B": {"type": "item", "code": "game:powder-borax", "quantity": 4},
+			"C": {"type": "item", "code": "game:powder-charcoal", "quantity": 4},
+			"D": {"type": "item", "code": "pigment-green", "quantity": 4},
+			"E": {"type": "item", "code": "game:crushed-cinnabar"},
+			"F": {"type": "item", "code": "game:crushed-lapislazuli"},
+			"G": {"type": "item", "code": "game:fat", "quantity": 2},
+			"P": {"type": "item", "code": "game:plank-*"}
+		},
+		"output": {"type": "item", "code": "paintset-colorful"}
+	},
+	{
+		"name": "paintset-colorful",
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "ABC,DEF,GPP",
+		"ingredients": {
+			"A": {"type": "item", "code": "pigment-yellow", "quantity": 4},
+			"B": {"type": "item", "code": "game:lime", "quantity": 8},
+			"C": {"type": "item", "code": "game:powder-charcoal", "quantity": 4},
+			"D": {"type": "item", "code": "pigment-green", "quantity": 4},
+			"E": {"type": "item", "code": "game:crushed-cinnabar"},
+			"F": {"type": "item", "code": "game:crushed-lapislazuli"},
+			"G": {"type": "item", "code": "game:fat", "quantity": 2},
+			"P": {"type": "item", "code": "game:plank-*"}
+		},
+		"output": {"type": "item", "code": "paintset-colorful"}
+	}
+]

@@ -1,0 +1,208 @@
+{
+	"editor": {
+		"collapsedPaths": "",
+		"allAngles": false,
+		"entityTextureMode": false
+	},
+	"textureWidth": 16,
+	"textureHeight": 16,
+	"textures": {
+		"coal": "game:block/coal/charcoal",
+		"rope": "game:item/resource/rope",
+		"wattle": "game:block/wattle"
+	},
+	"elements": [
+		{
+			"name": "Base",
+			"from": [5.0, 0.0, 5.0],
+			"to": [11.0, 5.0, 11.0],
+			"rotationOrigin": [5.0, 0.0, 5.0],
+			"faces": {
+				"north": {"texture": "#wattle", "uv": [0.0, 6.0, 12.0, 16.0], "autoUv": false},
+				"east": {"texture": "#wattle", "uv": [4.0, 6.0, 16.0, 16.0], "autoUv": false},
+				"south": {"texture": "#wattle", "uv": [0.0, 6.0, 12.0, 16.0], "autoUv": false},
+				"west": {"texture": "#wattle", "uv": [4.0, 6.0, 16.0, 16.0], "autoUv": false},
+				"up": {"texture": "#coal", "uv": [6.0, 6.5, 12.0, 12.5]},
+				"down": {"texture": "#wattle", "uv": [0.0, 0.0, 12.0, 12.0], "autoUv": false}
+			},
+			"children": [
+				{
+					"name": "North",
+					"from": [0.0, 5.0, 0.0],
+					"to": [0.5, 6.0, 5.5],
+					"rotationOrigin": [3.0, 7.0, 3.0],
+					"rotationY": -90.0,
+					"faces": {
+						"north": {"texture": "#wattle", "uv": [15.0, 4.0, 16.0, 6.0], "autoUv": false},
+						"east": {"texture": "#wattle", "uv": [0.0, 1.0, 11.0, 3.0], "autoUv": false},
+						"west": {"texture": "#wattle", "uv": [0.0, 4.0, 11.0, 6.0], "autoUv": false},
+						"up": {"texture": "#wattle", "uv": [0.0, 3.0, 11.0, 4.0], "rotation": 90, "autoUv": false}
+					}
+				},
+				{
+					"name": "East",
+					"from": [0.0, 5.0, 0.0],
+					"to": [0.5, 6.0, 5.5],
+					"rotationOrigin": [3.0, 7.0, 3.0],
+					"rotationY": 180.0,
+					"faces": {
+						"north": {"texture": "#wattle", "uv": [11.0, 4.0, 12.0, 6.0], "autoUv": false},
+						"east": {"texture": "#wattle", "uv": [4.0, 1.0, 15.0, 3.0], "autoUv": false},
+						"west": {"texture": "#wattle", "uv": [4.0, 4.0, 15.0, 6.0], "autoUv": false},
+						"up": {"texture": "#wattle", "uv": [4.0, 3.0, 15.0, 4.0], "rotation": 90, "autoUv": false}
+					}
+				},
+				{
+					"name": "South",
+					"from": [0.0, 5.0, 0.0],
+					"to": [0.5, 6.0, 5.5],
+					"rotationOrigin": [3.0, 7.0, 3.0],
+					"rotationY": 90.0,
+					"faces": {
+						"north": {"texture": "#wattle", "uv": [15.0, 4.0, 16.0, 6.0], "autoUv": false},
+						"east": {"texture": "#wattle", "uv": [0.0, 1.0, 11.0, 3.0], "autoUv": false},
+						"west": {"texture": "#wattle", "uv": [0.0, 4.0, 11.0, 6.0], "autoUv": false},
+						"up": {"texture": "#wattle", "uv": [0.0, 3.0, 1.0, 4.0], "rotation": 90, "autoUv": false}
+					}
+				},
+				{
+					"name": "West",
+					"from": [0.0, 5.0, 0.0],
+					"to": [0.5, 6.0, 5.5],
+					"rotationOrigin": [3.0, 7.0, 3.0],
+					"faces": {
+						"north": {"texture": "#wattle", "uv": [11.0, 4.0, 12.0, 6.0], "autoUv": false},
+						"east": {"texture": "#wattle", "uv": [4.0, 1.0, 15.0, 3.0], "autoUv": false},
+						"west": {"texture": "#wattle", "uv": [4.0, 4.0, 15.0, 6.0], "autoUv": false},
+						"up": {"texture": "#wattle", "uv": [4.0, 3.0, 15.0, 4.0], "rotation": 90, "autoUv": false}
+					}
+				},
+				{
+					"name": "Coal",
+					"from": [2.0, 5.0, 1.5],
+					"to": [5.0, 6.0, 2.5],
+					"rotationOrigin": [2.0, 5.0, 1.5],
+					"rotationY": -75.0,
+					"faces": {
+						"north": {"texture": "#coal", "uv": [0.0, 0.0, 3.0, 1.0]},
+						"east": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 1.0]},
+						"south": {"texture": "#coal", "uv": [0.0, 0.0, 3.0, 1.0]},
+						"west": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 1.0]},
+						"up": {"texture": "#coal", "uv": [0.0, 0.0, 3.0, 1.0]}
+					}
+				},
+				{
+					"name": "Coal2",
+					"from": [3.0, 4.0, 1.5],
+					"to": [5.0, 5.0, 2.5],
+					"rotationOrigin": [3.0, 4.0, 1.5],
+					"rotationY": -45.0,
+					"rotationZ": 22.5,
+					"faces": {
+						"north": {"texture": "#coal", "uv": [0.0, 0.0, 2.0, 1.0]},
+						"east": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 1.0]},
+						"south": {"texture": "#coal", "uv": [0.0, 0.0, 2.0, 1.0]},
+						"up": {"texture": "#coal", "uv": [0.0, 0.0, 2.0, 1.0]}
+					}
+				},
+				{
+					"name": "Coal3",
+					"from": [3.5, 3.5, 3.5],
+					"to": [4.5, 6.5, 4.5],
+					"rotationOrigin": [3.5, 4.5, 3.5],
+					"rotationX": -22.5,
+					"rotationZ": 45.0,
+					"faces": {
+						"north": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 3.0]},
+						"east": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 3.0]},
+						"south": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 3.0]},
+						"west": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 3.0]},
+						"up": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 1.0]}
+					}
+				},
+				{
+					"name": "Coal4",
+					"from": [4.0, 4.75, 1.0],
+					"to": [5.0, 5.75, 2.0],
+					"rotationOrigin": [4.5, 5.0, 1.5],
+					"rotationZ": 22.5,
+					"faces": {
+						"north": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 1.0]},
+						"east": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 1.0]},
+						"south": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 1.0]},
+						"west": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 1.0]},
+						"up": {"texture": "#coal", "uv": [0.0, 0.0, 1.0, 1.0]}
+					}
+				},
+				{
+					"name": "RopeNorthWest",
+					"from": [0.0, 5.8, 0.0],
+					"to": [0.5, 10.5, 0.5],
+					"rotationOrigin": [0.25, 5.7, 0.25],
+					"rotationX": 45.01,
+					"rotationZ": -35.26,
+					"faces": {
+						"north": {"texture": "#rope", "uv": [0.0, 0.0, 1.0, 9.5], "autoUv": false},
+						"east": {"texture": "#rope", "uv": [3.0, 0.0, 4.0, 9.5], "autoUv": false},
+						"south": {"texture": "#rope", "uv": [2.0, 0.0, 3.0, 9.5], "autoUv": false},
+						"west": {"texture": "#rope", "uv": [1.0, 0.0, 2.0, 9.5], "autoUv": false}
+					}
+				},
+				{
+					"name": "RopeSouthWest",
+					"from": [0.0, 5.8, 5.5],
+					"to": [0.5, 10.5, 6.0],
+					"rotationOrigin": [0.25, 5.7, 5.75],
+					"rotationX": -45.0,
+					"rotationZ": -35.26,
+					"faces": {
+						"north": {"texture": "#rope", "uv": [0.0, 1.0, 1.0, 10.5], "autoUv": false},
+						"east": {"texture": "#rope", "uv": [3.0, 1.0, 4.0, 10.5], "autoUv": false},
+						"south": {"texture": "#rope", "uv": [2.0, 1.0, 3.0, 10.5], "autoUv": false},
+						"west": {"texture": "#rope", "uv": [1.0, 1.0, 2.0, 10.5], "autoUv": false}
+					}
+				},
+				{
+					"name": "RopeSouthEast",
+					"from": [5.5, 5.8, 5.5],
+					"to": [6.0, 10.5, 6.0],
+					"rotationOrigin": [5.75, 5.7, 5.75],
+					"rotationX": -45.01,
+					"rotationZ": 35.26,
+					"faces": {
+						"north": {"texture": "#rope", "uv": [0.0, 2.0, 1.0, 11.5], "autoUv": false},
+						"east": {"texture": "#rope", "uv": [3.0, 2.0, 4.0, 11.5], "autoUv": false},
+						"south": {"texture": "#rope", "uv": [2.0, 2.0, 3.0, 11.5], "autoUv": false},
+						"west": {"texture": "#rope", "uv": [1.0, 2.0, 2.0, 11.5], "autoUv": false}
+					}
+				},
+				{
+					"name": "RopeNorthEast",
+					"from": [5.5, 5.8, 0.0],
+					"to": [6.0, 10.5, 0.5],
+					"rotationOrigin": [5.75, 5.7, 0.25],
+					"rotationX": 45.0,
+					"rotationZ": 35.26,
+					"faces": {
+						"north": {"texture": "#rope", "uv": [0.0, 3.0, 1.0, 12.5], "autoUv": false},
+						"east": {"texture": "#rope", "uv": [3.0, 3.0, 4.0, 12.5], "autoUv": false},
+						"south": {"texture": "#rope", "uv": [2.0, 3.0, 3.0, 12.5], "autoUv": false},
+						"west": {"texture": "#rope", "uv": [1.0, 3.0, 2.0, 12.5], "autoUv": false}
+					}
+				},
+				{
+					"name": "RopeKnot",
+					"from": [2.8, 8.4, 2.8],
+					"to": [3.2, 8.8, 3.2],
+					"rotationOrigin": [3.0, 6.25, 3.0],
+					"faces": {
+						"north": {"texture": "#rope", "uv": [0.0, 1.0, 1.0, 2.0], "autoUv": false},
+						"east": {"texture": "#rope", "uv": [6.0, 1.0, 7.0, 2.0], "autoUv": false},
+						"south": {"texture": "#rope", "uv": [0.0, 0.0, 1.0, 1.0], "autoUv": false},
+						"west": {"texture": "#rope", "uv": [0.0, 0.0, 1.0, 1.0], "autoUv": false},
+						"up": {"texture": "#rope", "uv": [1.0, 2.0, 2.0, 3.0], "autoUv": false}
+					}
+				}
+			]
+		}
+	]}
