@@ -53,7 +53,7 @@ public class ItemInteractionData {
 		return true;
 	}
 
-	private static AssetLocation? GetOptionalAssetLocation(CollectibleObject owner, string domainAndPath) {
+	private static AssetLocation? GetOptionalAssetLocation(CollectibleObject owner, string? domainAndPath) {
 		if(domainAndPath == null)
 			return null;
 

@@ -12,7 +12,8 @@
 		<Company></Company>
 		<Copyright>© $([System.DateTime]::Now.Year) Genhis</Copyright>
 		<Description>Vintage Story game mod</Description>
-		<Version Condition="$([System.IO.File]::Exists('$(MSBuildProjectDirectory)/modinfo.json'))">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/modinfo.json')), '"version": "([0-9.]+)"').Groups[1].Value)</Version>
+		<ModVersion Condition="Exists('$(MSBuildProjectDirectory)/modinfo.json')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/modinfo.json')), '"version": "([^"]+)"').Groups[1].Value)</ModVersion>
+		<Version>$(ModVersion.Split('-')[0])</Version>
 	</PropertyGroup>
 	<ItemGroup>
 		<Reference Include="VintagestoryAPI">

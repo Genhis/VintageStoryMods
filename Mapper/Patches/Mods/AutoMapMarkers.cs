@@ -1,6 +1,7 @@
 namespace Mapper.Patches.Mods;
 
 using HarmonyLib;
+using Mapper.Util;
 using Mapper.Util.Harmony;
 using Mapper.Util.Reflection;
 using Mapper.WorldMap;
@@ -12,15 +13,15 @@ using Vintagestory.API.Server;
 
 [DynamicHarmonyPatch(AssemblyName = "automapmarkers")]
 internal static class AutoMapMarkers {
-#pragma warning disable CS8618
+#pragma warning disable CS0649, CS8618
 	private static Assembly assembly;
-#pragma warning restore CS8618
+#pragma warning restore CS0649, CS8618
 
 	[DynamicHarmonyPatch("Egocarib.AutoMapMarkers.Utilities.WaypointUtil", "AddWaypoint")]
 	[HarmonyTranspiler]
 	internal static IEnumerable<CodeInstruction> AddWaypoint(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
 		// Find https://github.com/egocarib/Vintage-Story-Mods/blob/a65aa97bf55fee5b66d1550c90f16019288f9763/mods/automapmarkers/src/Utilities/WaypointUtil.cs#L55
-		// Append `&& AutoMapMarkers.AddWaypointInsert(this.ServerPlayer, position)` to the condition
+		// Append `|| !AutoMapMarkers.AddWaypointInsert(this.ServerPlayer, position)` to the condition
 		CodeInstruction newStart = new(OpCodes.Ldarg_0);
 		return new CodeMatcher(instructions, generator).MatchEndForward([
 			new(OpCodes.Ldfld, AutoMapMarkers.assembly.GetCheckedType("Egocarib.AutoMapMarkers.Settings.MapMarkerConfig+Settings+AutoMapMarkerSetting").GetCheckedField("Enabled", BindingFlags.Instance)),
@@ -38,7 +39,7 @@ internal static class AutoMapMarkers {
 
 	internal static bool AddWaypointInsert(IServerPlayer player, Vec3d position) {
 		MapperChunkMapLayer layer = MapperChunkMapLayer.GetInstance(player.Entity.Api);
-		int? scaleFactor = layer.GetScaleFactor(player, new FastVec2i((int)position.X / 32, (int)position.Z / 32));
+		int? scaleFactor = layer.GetScaleFactor(player, position.ToChunkPosition());
 		if(scaleFactor == null) {
 			layer.TrySendUnrevealedMapMessage(player);
 			return false;

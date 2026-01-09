@@ -1,5 +1,5 @@
 <Project>
 	<Target Name="PackageZip" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
-		<Exec Command='powershell -File "$(SolutionDir)/create-release-archive.ps1" $(MSBuildProjectDirectory) $(Version)' />
+		<Exec Command='powershell -File "$(SolutionDir)/create-release-archive.ps1" $(MSBuildProjectDirectory) $(ModVersion)' />
 	</Target>
 </Project>
