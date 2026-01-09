@@ -106,7 +106,7 @@ internal class CompassNeedleUpdater {
 
 		dt = Math.Min(dt, 2 / 30f);
 		EntityPlayer playerEntity = this.api.World.Player.Entity;
-		float yaw = playerEntity.Pos.Yaw;
+		float yaw = -playerEntity.Pos.Yaw;
 		HandData stashedLeftHand = this.leftHand;
 		CompassNeedleUpdater.CheckHand(playerEntity.LeftHandItemSlot.Itemstack, HandType.Left, ref this.leftHand, this.rightHand, yaw);
 		CompassNeedleUpdater.CheckHand(playerEntity.RightHandItemSlot.Itemstack, HandType.Right, ref this.rightHand, stashedLeftHand, yaw);
