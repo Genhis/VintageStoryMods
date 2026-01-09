@@ -1,3 +1,5 @@
+#Requires -Modules @{ModuleName="Microsoft.PowerShell.Archive"; ModuleVersion="1.2.5"}
+
 param([string]$projectDir, [string]$version)
 
 $project = Split-Path -Path $projectDir -Leaf

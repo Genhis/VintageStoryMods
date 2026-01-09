@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - AutoMapMarkers error messages about unrevealed map were given 10 seconds cooldown.
 ### Fixed
 - AutoMapMarkers would spam error messages about unrevealed map for disabled object types.
+- Mapper wouldn't load on non-Windows systems because of the release zip file structure. ([#3](https://github.com/Genhis/VintageStoryMods/issues/3))
 
 ## [0.1.0] - 2026-01-07
 ### Added
