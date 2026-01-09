@@ -155,10 +155,12 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 	public override void OnDataFromClient(byte[] data) {
-		if(!this.Enabled)
-			return;
-
 		ClientToServerPacket packet = SerializerUtil.Deserialize<ClientToServerPacket>(data);
+		if(!this.Enabled) {
+			this.CheckEnabledServer((IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID));
+			return;
+		}
+
 		if(packet.RecoverMap)
 			this.mapSink.SendMapDataToClient(this, (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), SerializerUtil.Serialize(new ServerToClientPacket{Changes = this.serverStorage![packet.PlayerUID].PrepareClientRecovery(), RecoverMap = true}));
 		else {
@@ -171,6 +173,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		ServerToClientPacket packet = SerializerUtil.Deserialize<ServerToClientPacket>(data);
 		if(packet.RecoverMap && this.status == Status.CorruptedData) {
 			this.status = Status.Enabled;
+			((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-mapper-restore-client-request-response"));
 			if(packet.Changes == null)
 				return;
 		}
