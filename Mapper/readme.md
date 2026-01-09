@@ -18,7 +18,7 @@ This mod adds map drawing mechanic - the world map no longer updates automatical
 - Mapper stores data both server-side and client-side. For each player, the server knows about all chunks where the map item was used, their resolution and their last-applied color. The client stores individual chunk pixels.
 - Unlike Vintage Story map which uses a SQLite database, Mapper stores data in a compressed binary format and loads it all into memory. This could become a problem for large mapped areas, but the fact that chunks aren't charted automatically and doing so costs resources should mitigate it.
 - The save format is backwards compatible. If the binary structure changes, new mod versions will be able to load old save files but old mod versions won't be able to read new save files.
-- In the unlikely scenario if this data gets corrupted, an error is shown in-game. This error doesn't affect anything besides the mapping functionality. To restore the mod and overwrite corrupted data, type `.mapper enable` (client-side) or `/mapper enable` (server-side) depending on where the issue occured.
+- In the unlikely scenario if this data gets corrupted, an error is shown in-game. This error doesn't affect anything besides the mapping functionality. To restore the mod and overwrite corrupted data, type `.mapper restore` (client-side) or `/mapper restore` (server-side) depending on where the issue occured.
 
 ## Built-in mod compatibility
 - [Auto Map Markers](https://mods.vintagestory.at/automapmarkers)

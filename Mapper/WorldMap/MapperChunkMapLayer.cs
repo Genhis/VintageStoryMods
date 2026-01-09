@@ -58,7 +58,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.chunksToRedrawLock = new();
 		}
 
-		this.api.ChatCommands.GetOrCreate("mapper").RequiresPrivilege(Privilege.root).BeginSubCommand("enable").WithDescription(Lang.Get("mapper:commanddesc-mapper-enable")).HandleWith(this.HandleEnableCommand);
+		this.api.ChatCommands.GetOrCreate("mapper").RequiresPrivilege(Privilege.root).BeginSubCommand("restore").WithDescription(Lang.Get("mapper:commanddesc-mapper-restore")).HandleWith(this.HandleRestoreCommand);
 	}
 
 	public override void OnLoaded() {
@@ -87,16 +87,16 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		base.OnShutDown();
 	}
 
-	private TextCommandResult HandleEnableCommand(TextCommandCallingArgs args) {
+	private TextCommandResult HandleRestoreCommand(TextCommandCallingArgs args) {
 		string side = this.api.Side == EnumAppSide.Client ? "client" : "server";
 		if(this.enabled)
-			return TextCommandResult.Error(Lang.Get($"mapper:commandresult-mapper-enable-{side}-error"));
+			return TextCommandResult.Error(Lang.Get($"mapper:commandresult-mapper-restore-{side}-error"));
 
 		if(this.api is ICoreClientAPI capi)
 			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = capi.World.Player.PlayerUID, RecoverMap = true}));
 		else
 			this.enabled = true;
-		return TextCommandResult.Success(Lang.Get($"mapper:commandresult-mapper-enable-{side}-success"));
+		return TextCommandResult.Success(Lang.Get($"mapper:commandresult-mapper-restore-{side}-success"));
 	}
 
 	public int MarkChunksForRedraw(IServerPlayer player, FastVec2i chunkPosition, int radius, int durability, byte colorLevel, byte zoomLevel, bool forceOverdraw = false) {
