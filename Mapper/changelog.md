@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-01-09
+### Added
+- An alternative recipe for primitive compass which uses iron ore nuggets.
+### Changed
+- AutoMapMarkers error messages about unrevealed map were given 10 seconds cooldown.
+- Renamed `mapper enable` command to `mapper restore`.
+### Fixed
+- AutoMapMarkers would spam error messages about unrevealed map for disabled object types.
+- Mapper wouldn't load on non-Windows systems because of the release zip file structure. ([#3](https://github.com/Genhis/VintageStoryMods/issues/3))
+- Mapper raised an exception when used in save files which had the world map disabled.
+- Compass didn't point to true north.
+
 ## [0.1.0] - 2026-01-07
 ### Added
 - **Main items:** Compass, map and drawing kit variations.
@@ -15,3 +27,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Includes a handbook guide to explain the mechanics.
 ### Changed
 - Increased refresh rate of coordinates HUD from 250 ms to 50 ms.
+
+[0.1.0]: https://github.com/Genhis/VintageStoryMods/pull/2
+[0.2.0]: https://github.com/Genhis/VintageStoryMods/pull/4

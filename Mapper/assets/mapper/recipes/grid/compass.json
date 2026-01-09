@@ -1,10 +1,23 @@
 [
 	{
+		"name": "compass-primitive",
 		"width": 2,
 		"height": 2,
 		"ingredientPattern": "NC,_B",
 		"ingredients": {
 			"N": {"type": "item", "code": "game:gear-rusty"},
+			"C": {"type": "item", "code": "game:stick"},
+			"B": {"type": "block", "code": "game:bowl-*-fired", "name": "color"}
+		},
+		"output": {"type": "item", "code": "compass-primitive-{color}"}
+	},
+	{
+		"name": "compass-primitive",
+		"width": 2,
+		"height": 2,
+		"ingredientPattern": "NC,_B",
+		"ingredients": {
+			"N": {"type": "item", "code": "game:nugget-*", "allowedVariants": ["magnetite", "hematite", "limonite"]},
 			"C": {"type": "item", "code": "game:stick"},
 			"B": {"type": "block", "code": "game:bowl-*-fired", "name": "color"}
 		},
