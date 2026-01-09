@@ -37,9 +37,11 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	private float clientAutosaveTimer;
 
 	private bool dirty;
-	private bool enabled = true;
+	private enum Status { Enabled, DisabledMap, CorruptedData }
+	private Status status = Status.Enabled;
 
 	public override EnumMapAppSide DataSide => EnumMapAppSide.Server;
+	public bool Enabled => this.status == Status.Enabled;
 
 	public MapperChunkMapLayer(ICoreAPI api, IWorldMapManager mapSink) : base(api, mapSink) {
 		if(api is ICoreServerAPI sapi) {
@@ -69,11 +71,17 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			throw new InvalidOperationException("Another MapperChunkMapLayer instance is already loaded");
 		modSystem.mapLayer = this;
 
+		if(!this.api.World.Config.GetBool("allowMap", true)) {
+			this.status = Status.DisabledMap;
+			this.api.Logger.Warning("[mapper] World map is disabled, run `/worldconfig allowMap true` to enable it and restart the server");
+			return;
+		}
+
 		if(this.serverStorage != null)
-			this.enabled = this.serverStorage.Load((ICoreServerAPI)this.api);
+			this.status = this.serverStorage.Load((ICoreServerAPI)this.api) ? Status.Enabled : Status.CorruptedData;
 		else {
 			this.background = new MapBackground((ICoreClientAPI)this.api, "mapper:textures/map.png");
-			this.enabled = this.clientStorage!.Load(this.clientStorageFilename!, this.api.Logger, this.background);
+			this.status = this.clientStorage!.Load(this.clientStorageFilename!, this.api.Logger, this.background) ? Status.Enabled : Status.CorruptedData;
 		}
 	}
 
@@ -89,13 +97,13 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 	private TextCommandResult HandleRestoreCommand(TextCommandCallingArgs args) {
 		string side = this.api.Side == EnumAppSide.Client ? "client" : "server";
-		if(this.enabled)
+		if(this.status != Status.CorruptedData)
 			return TextCommandResult.Error(Lang.Get($"mapper:commandresult-mapper-restore-{side}-error"));
 
 		if(this.api is ICoreClientAPI capi)
 			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = capi.World.Player.PlayerUID, RecoverMap = true}));
 		else
-			this.enabled = true;
+			this.status = Status.Enabled;
 		return TextCommandResult.Success(Lang.Get($"mapper:commandresult-mapper-restore-{side}-success"));
 	}
 
@@ -140,12 +148,14 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return;
 
 		string uid = player.PlayerUID;
-		if(this.joiningPlayers.Remove(uid))
+		if(this.joiningPlayers.Remove(uid)) {
+			this.api.Logger.Notification($"[mapper] Sending last known position to player {uid}");
 			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{LastKnownPosition = this.serverStorage!.GetOrCreate(uid).LastKnownPosition}));
+		}
 	}
 
 	public override void OnDataFromClient(byte[] data) {
-		if(!this.enabled)
+		if(!this.Enabled)
 			return;
 
 		ClientToServerPacket packet = SerializerUtil.Deserialize<ClientToServerPacket>(data);
@@ -159,12 +169,12 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 	public override void OnDataFromServer(byte[] data) {
 		ServerToClientPacket packet = SerializerUtil.Deserialize<ServerToClientPacket>(data);
-		if(packet.RecoverMap) {
-			this.enabled = true;
+		if(packet.RecoverMap && this.status == Status.CorruptedData) {
+			this.status = Status.Enabled;
 			if(packet.Changes == null)
 				return;
 		}
-		if(!this.enabled)
+		if(!this.Enabled)
 			return;
 
 		if(packet.Changes == null) {
@@ -286,23 +296,23 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 	public bool CheckEnabledClient() {
-		if(this.enabled)
+		if(this.Enabled)
 			return true;
 
-		((ICoreClientAPI)this.api).TriggerIngameError(this, "mapper-mod-disabled", Lang.Get("mapper:error-mod-disabled-client"));
+		((ICoreClientAPI)this.api).TriggerIngameError(this, "mapper-mod-disabled", Lang.Get("mapper:error-" + MapperChunkMapLayer.GetStatusCode(this.status, true)));
 		return false;
 	}
 
 	public bool CheckEnabledServer(IServerPlayer player) {
-		if(this.enabled)
+		if(this.Enabled)
 			return true;
 
-		player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.GetL(player.LanguageCode, "mapper:error-mod-disabled-server"), EnumChatType.Notification);
+		player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.GetL(player.LanguageCode, "mapper:error-" + MapperChunkMapLayer.GetStatusCode(this.status, false)), EnumChatType.Notification);
 		return false;
 	}
 
 	public int? GetScaleFactor(IServerPlayer player, FastVec2i chunkPosition) {
-		if(this.serverStorage![player.PlayerUID].Regions.TryGetValue(RegionPosition.FromChunkPosition(chunkPosition), out MapRegion mapRegion)) {
+		if(this.Enabled && this.serverStorage![player.PlayerUID].Regions.TryGetValue(RegionPosition.FromChunkPosition(chunkPosition), out MapRegion mapRegion)) {
 			byte zoomLevel = mapRegion.GetZoomLevel(chunkPosition);
 			return zoomLevel == ColorAndZoom.EmptyZoomLevel ? null : 1 << zoomLevel;
 		}
@@ -312,7 +322,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	public int? GetScaleFactor(IClientPlayer? player, FastVec2i chunkPosition) {
 		static int? GetCompassScaleFactor(ItemSlot slot) => BehaviorCompassNeedle.GetScaleFactor(slot.Itemstack?.ItemAttributes);
 
-		int? scaleFactor = this.clientStorage!.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk) ? 1 << mapChunk.ZoomLevel : null;
+		int? scaleFactor = this.Enabled && this.clientStorage!.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk) ? 1 << mapChunk.ZoomLevel : null;
 		if(player != null)
 			scaleFactor = MathUtil.Min(scaleFactor, MathUtil.Min(GetCompassScaleFactor(player.Entity.LeftHandItemSlot), GetCompassScaleFactor(player.Entity.RightHandItemSlot)));
 		return scaleFactor;
@@ -398,5 +408,13 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		string directory = Path.Combine(GamePaths.DataPath, "Maps", "MapperMod");
 		GamePaths.EnsurePathExists(directory);
 		return Path.Combine(directory, api.World.SavegameIdentifier + ".dat");
+	}
+
+	private static string GetStatusCode(Status status, bool client) {
+		return status switch {
+			Status.DisabledMap => "mod-disabled",
+			Status.CorruptedData => "mod-data-corrupted-" + (client ? "client" : "server"),
+			_ => throw new InvalidOperationException($"Invalid status: {status} ({(int)status})"),
+		};
 	}
 }
