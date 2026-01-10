@@ -1,4 +1,4 @@
-﻿namespace FilteredBackpacks;
+namespace FilteredBackpacks;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -11,7 +11,7 @@ public class BagPatch {
 	public EnumItemStorageFlags storageFlags;
 
 	private readonly string bagType;
-	private AssetLocation[] wildcards;
+	private AssetLocation[] wildcards = [];
 
 	public BagPatch(EnumItemStorageFlags storageFlags, string bagType) {
 		this.storageFlags = storageFlags;
@@ -75,6 +75,7 @@ public class ServerConfig {
 			"game:cattailtops",
 			"game:flaxfibers",
 			"game:hay-normal-*",
+			"game:papyrustops",
 			"game:thatch",
 		};
 
