@@ -49,8 +49,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.joiningPlayers = [];
 
 			sapi.Event.GameWorldSave += () => {
-				if(this.dirty)
-					this.dirty = this.serverStorage.Save((ICoreServerAPI)this.api);
+				if(this.dirty && this.serverStorage.Save((ICoreServerAPI)this.api))
+					this.dirty = false;
 			};
 			sapi.Event.PlayerJoin += player => this.joiningPlayers.Add(player.PlayerUID);
 		}
