@@ -8,7 +8,11 @@ public static class ReflectionExtensions {
 	private const BindingFlags BindingFlagsAccess = BindingFlags.Public | BindingFlags.NonPublic;
 
 	public static string JoinNames(this Type[] args) {
-		return string.Join(", ", new List<Type>(args).ConvertAll(item => item.Name));
+		return string.Join(", ", new List<Type>(args).ConvertAll(ReflectionAccessors.GetUserFriendlyName));
+	}
+
+	public static string JoinNames(this ParameterInfo[] args) {
+		return string.Join(", ", new List<ParameterInfo>(args).ConvertAll(item => ReflectionAccessors.GetUserFriendlyName(item.ParameterType)));
 	}
 
 	public static Type GetCheckedType(this Assembly assembly, string name) {
@@ -45,7 +49,7 @@ public static class ReflectionExtensions {
 		return property.GetMethod ?? throw new InvalidOperationException($"Property does not have a getter: {property.DeclaringType!.Name}.{property.Name}");
 	}
 
-	public static string GetParentAndName(this MethodInfo method, Type[]? args = null) {
-		return $"{method.DeclaringType!.Name}.{method.Name}({(args == null ? "..." : args.JoinNames())})";
+	public static string GetParentAndName(this MethodBase method) {
+		return $"{method.DeclaringType!.FullName}.{method.Name}({method.GetParameters().JoinNames()})";
 	}
 }
