@@ -15,7 +15,7 @@ internal static class GuiDialogWorldMapPatch {
 	[HarmonyPatch("Open")]
 	[HarmonyPrefix]
 	internal static bool Open(GuiDialogWorldMap __instance, EnumDialogType type, ICoreClientAPI ___capi) {
-		if(type == EnumDialogType.Dialog || !MapperChunkMapLayer.HasLastKnownPosition(___capi))
+		if(type == EnumDialogType.Dialog || !MapperChunkMapLayer.GetInstance(___capi).HasLastKnownPosition())
 			return true;
 		if(__instance.IsOpened())
 			__instance.TryClose();
@@ -28,7 +28,7 @@ internal static class GuiDialogWorldMapPatch {
 		CodeMatcher matcher = new(instructions);
 
 		// Find https://github.com/anegostudios/vsessentialsmod/blob/b447263a4860f52d92fd29f800f3f1fd8e905c6a/Systems/WorldMap/GuiDialogWorldMap.cs#L267
-		// Insert `&& MapperChunkMapLayer.HasLastKnownPosition(this.capi)` after Dialog
+		// Insert `&& MapperChunkMapLayer.GetInstance(this.capi).HasLastKnownPosition()` after Dialog
 		CodeInstruction skipOpenHud = matcher.MatchEndForward([
 			new(OpCodes.Ldarg_0),
 			new(OpCodes.Callvirt, typeof(GuiDialog).GetCheckedProperty("DialogType", BindingFlags.Instance).CheckedGetMethod()),
@@ -37,7 +37,8 @@ internal static class GuiDialogWorldMapPatch {
 		matcher.Advance(1).InsertAndAdvance([
 			new(OpCodes.Ldarg_0),
 			CodeInstruction.LoadField(typeof(GuiDialog), "capi"),
-			CodeInstruction.Call(typeof(MapperChunkMapLayer), "HasLastKnownPosition", [typeof(ICoreAPI)]),
+			new(OpCodes.Call, typeof(MapperChunkMapLayer).GetCheckedMethod("GetInstance", BindingFlags.Static, [typeof(ICoreAPI)])),
+			new(OpCodes.Callvirt, typeof(MapperChunkMapLayer).GetCheckedMethod("HasLastKnownPosition", BindingFlags.Instance, [])),
 			skipOpenHud.Clone(),
 		]);
 

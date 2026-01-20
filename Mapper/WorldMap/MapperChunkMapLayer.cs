@@ -337,6 +337,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		return scaleFactor;
 	}
 
+	public bool HasLastKnownPosition() {
+		return this.lastKnownPosition != null;
+	}
+
 	public Vec3d GetPlayerOrLastKnownPosition() {
 		if(this.lastKnownPosition != null)
 			return this.lastKnownPosition;
@@ -356,7 +360,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.GetL(player.LanguageCode, "mapper:error-unexplored-map"), EnumChatType.Notification);
 	}
 
-	public static MapperChunkMapLayer GetInstance(ICoreAPI api) {
+	internal static MapperChunkMapLayer GetInstance(ICoreAPI api) {
 		return api.ModLoader.GetModSystem<MapperModSystem>().mapLayer!;
 	}
 
@@ -368,10 +372,6 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		position.Y = (int)position.Y / scaleFactor * scaleFactor + scaleFactor / 2;
 		position.Z = (int)position.Z / scaleFactor * scaleFactor + scaleFactor / 2;
 		return position;
-	}
-
-	public static bool HasLastKnownPosition(ICoreAPI api) {
-		return MapperChunkMapLayer.GetInstance(api).lastKnownPosition != null;
 	}
 
 	private static void ConvertToGrayscale(int[] pixels, int[] paperPixels, uint oceanColor) {
