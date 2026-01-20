@@ -42,6 +42,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 	public override EnumMapAppSide DataSide => EnumMapAppSide.Server;
 	public bool Enabled => this.status == Status.Enabled;
+	public readonly Dictionary<object, Action<FastVec2i>> OnChunkChanged = [];
 
 	public MapperChunkMapLayer(ICoreAPI api, IWorldMapManager mapSink) : base(api, mapSink) {
 		if(api is ICoreServerAPI sapi) {
@@ -272,11 +273,16 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			if(redrawRequest.Value.Color == 1)
 				MapperChunkMapLayer.ConvertToGrayscale(pixels, this.background!.GetPixels(redrawRequest.Key, redrawRequest.Value.ZoomLevel), (uint)this.colorsByCode.Get("ocean", 0) | 0xFF000000);
 			if(redrawRequest.Value.ZoomLevel > 0)
-				MapperChunkMapLayer.ApplyBoxFilter(pixels, redrawRequest.Value.ZoomLevel);
+				MapperChunkMapLayer.ApplyBoxFilter(pixels, 1u << redrawRequest.Value.ZoomLevel);
 
 			this.dirty = true;
 			this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, redrawRequest.Value.ZoomLevel, false);
 			readyMapPieces.Enqueue(new ReadyMapPiece{Cord = redrawRequest.Key, Pixels = pixels});
+
+			if(this.OnChunkChanged.Count != 0)
+				lock(this.OnChunkChanged)
+					foreach(KeyValuePair<object, Action<FastVec2i>> item in this.OnChunkChanged)
+						item.Value.Invoke(redrawRequest.Key);
 		}
 	}
 
@@ -380,12 +386,11 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		}
 	}
 
-	private static void ApplyBoxFilter(int[] pixels, byte zoomLevel) {
-		uint resolution = 1u << zoomLevel;
+	internal static int[] ApplyBoxFilter(int[] pixels, uint resolution) {
 		uint resolutionSquared = resolution * resolution;
 		for(uint y = 0; y < MapChunk.Size; y += resolution)
 			for(uint x = 0; x < MapChunk.Size; x += resolution) {
-				uint sumR = 0, sumG = 0, sumB = 0;
+				uint sumR = 0, sumG = 0, sumB = 0, sumA = 0;
 				for(uint innerY = 0; innerY < resolution; ++innerY) {
 					uint rowOffset = (y + innerY) * MapChunk.Size + x;
 					for(uint innerX = 0; innerX < resolution; ++innerX) {
@@ -393,18 +398,18 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 						sumR += color & 0xFF;
 						sumG += (color >> 8) & 0xFF;
 						sumB += (color >> 16) & 0xFF;
+						sumA += color >> 24;
 					}
 				}
 
-				uint r = sumR / resolutionSquared;
-				uint g = sumG / resolutionSquared;
-				uint b = sumB / resolutionSquared;
+				int pixel = (int)(sumA / resolutionSquared << 24 | sumB / resolutionSquared << 16 | sumG / resolutionSquared << 8 | sumR / resolutionSquared);
 				for(uint innerY = 0; innerY < resolution; ++innerY) {
 					uint rowOffset = (y + innerY) * MapChunk.Size + x;
 					for(uint innerX = 0; innerX < resolution; ++innerX)
-						pixels[rowOffset + innerX] = (int)(0xFF000000 | (b << 16) | (g << 8) | r);
+						pixels[rowOffset + innerX] = pixel;
 				}
 			}
+		return pixels;
 	}
 
 	private static string GetClientStorageFilename(ICoreAPI api) {

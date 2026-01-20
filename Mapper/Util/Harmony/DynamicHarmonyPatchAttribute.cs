@@ -7,6 +7,7 @@ public class DynamicHarmonyPatchAttribute(string? assemblyName, string? typeName
 	public string? AssemblyName = assemblyName;
 	public string? TypeName = typeName;
 	public string? MethodName = methodName;
+	public bool Optional;
 
 	public DynamicHarmonyPatchAttribute() : this(null, null, null) {}
 	public DynamicHarmonyPatchAttribute(string methodName) : this(null, null, methodName) {}
