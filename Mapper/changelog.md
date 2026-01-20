@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-01-20
+### Added
+- Basic support for [GiMap](https://mods.vintagestory.at/gimap) mod:
+  - Chunks are refreshed and stored periodically, but Mapper processes them and decides if they should be shown.
+  - OreMapLayer is limited to processing one chunk per iteration, otherwise it would stall loading of other layers.
+
 ## [0.2.0] - 2026-01-09
 ### Added
 - An alternative recipe for primitive compass which uses iron ore nuggets.
@@ -30,3 +36,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 [0.1.0]: https://github.com/Genhis/VintageStoryMods/pull/2
 [0.2.0]: https://github.com/Genhis/VintageStoryMods/pull/4
+[0.3.0]: https://github.com/Genhis/VintageStoryMods/pull/5

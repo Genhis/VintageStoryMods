@@ -31,6 +31,8 @@ internal class DynamicPatchResolver(Harmony harmony, ILogger logger) {
 			if(!this.TryGetTargetType(targetClassAssembly, attribute.TypeName, out Type? targetClassType))
 				continue;
 
+			if(targetClassType != null)
+				type.GetField("type", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)?.SetValue(null, targetClassType);
 			if(targetClassAssembly != null)
 				type.GetField("assembly", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)?.SetValue(null, targetClassAssembly);
 			foreach(MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
@@ -60,6 +62,10 @@ internal class DynamicPatchResolver(Harmony harmony, ILogger logger) {
 			throw;
 		}
 		catch(Exception ex) {
+			if(attribute.Optional) {
+				this.logger.Error($"An error occured when loading an optional patch for {targetAssembly.GetName().Name} assembly:\n{ex}");
+				return;
+			}
 			this.UnpatchAndSkipAssembly(targetAssembly, ex);
 		}
 	}

@@ -57,7 +57,6 @@ public class ClientMapStorage : IDisposable {
 		}
 		catch(Exception ex) {
 			logger.Error("[mapper] Failed to save client map storage: " + ex.ToString());
-			dirtyFlag = true;
 		}
 	}
 

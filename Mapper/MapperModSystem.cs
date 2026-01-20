@@ -40,6 +40,7 @@ public class MapperModSystem : ModSystem {
 		if(MapperModSystem.enabled) {
 			this.Mod.Logger.Notification("Registering OnTick handler for compass updates");
 			this.compassNeedleUpdater = new CompassNeedleUpdater(api);
+			PatchDebugger.CheckPatchConflicts(this.Mod.Info.ModID, this.Mod.Logger, true);
 		}
 	}
 
