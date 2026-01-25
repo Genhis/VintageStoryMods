@@ -1,0 +1,31 @@
+[
+	{
+		"ingredientPattern": "PPP,WWW,WLW",
+		"ingredients": {
+			"P": {
+				"type": "item",
+				"code": "game:paper-*",
+				"isTool": false,
+				"allowedVariants": [
+					"parchment",
+					"papyrus",
+					"plain"
+				]
+			},
+			"W": {
+				"type": "block",
+				"code": "game:plankslab-*"
+			},
+			"L": {
+				"type": "block",
+				"code": "game:log-*-ud"
+			}
+		},
+		"width": 3,
+		"height": 3,
+		"output": {
+			"type": "block",
+			"code": "mapper:cartographers-table"
+		}
+	}
+]

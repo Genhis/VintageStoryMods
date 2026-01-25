@@ -12,10 +12,11 @@ public readonly struct MapChunk {
 	private readonly ColorAndZoom modeAndZoom;
 
 	public readonly byte ZoomLevel => this.modeAndZoom.ZoomLevel;
+	public readonly byte ColorLevel => this.modeAndZoom.Color;
 
-	public MapChunk(int[] pixels, byte zoomLevel, bool unexplored) {
+	public MapChunk(int[] pixels, byte zoomLevel, byte colorLevel) {
 		this.Pixels = pixels;
-		this.modeAndZoom = new ColorAndZoom(unexplored ? (byte)0 : (byte)1, zoomLevel);
+		this.modeAndZoom = new ColorAndZoom(colorLevel, zoomLevel);
 	}
 
 	public MapChunk(VersionedReader input, FastVec2i chunkPosition, MapBackground background) {
