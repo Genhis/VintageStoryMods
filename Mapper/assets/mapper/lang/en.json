@@ -63,5 +63,14 @@
 	"iteminfo-map-scales": "Map scales: {0}",
 	"toolmode-map-scale": "Scale 1:{0} ({p1:0.# blocks|# block|# blocks} per pixel)",
 	"toolmode-paintbrush-refresh": "Refresh map state in {0}-chunk radius ({1} total)",
-	"toolmode-paintbrush-upgrade": "Upgrade map color in {0}-chunk radius ({1} total)"
+	"toolmode-paintbrush-upgrade": "Upgrade map color in {0}-chunk radius ({1} total)",
+	"block-cartographers-table": "Cartographer's Table",
+	"blockdesc-cartographers-table": "A workstation for sharing map data. Interact to synchronize your discoveries.",
+	"blockhelp-cartographers-table-sync": "Synchronize map data",
+	"commandresult-cartographers-table-uploaded": "Sent new data to Cartographer's Table.",
+	"commandresult-cartographers-table-uploaded-nothing": "No new map data to send to Cartographer's Table.",
+	"commandresult-cartographers-table-downloaded": "Found map data in Cartographer's Table, your map has been updated.",
+	"commandresult-cartographers-table-downloaded-nothing": "Found no new map data in Cartographer's Table.",
+	"error-cartographers-table-disabled": "The Mapper mod is currently disabled.",
+	"error-cartographers-table-not-found": "Cartographer's Table not found at this location."
 }
