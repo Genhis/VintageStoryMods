@@ -4,6 +4,7 @@ using Mapper.Behaviors;
 using Mapper.Blocks;
 using Mapper.Util;
 using Mapper.Util.Reflection;
+using Mapper.Util.IO;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -106,7 +107,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return TextCommandResult.Error(Lang.Get($"mapper:commandresult-mapper-restore-{side}-error"));
 
 		if(this.api is ICoreClientAPI capi)
-			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket { PlayerUID = capi.World.Player.PlayerUID, RecoverMap = true }));
+			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = capi.World.Player.PlayerUID, RecoverMap = true}));
 		else
 			this.status = Status.Enabled;
 		return TextCommandResult.Success(Lang.Get($"mapper:commandresult-mapper-restore-{side}-success"));
@@ -116,12 +117,15 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(this.api is not ICoreClientAPI capi)
 			return;
 
-		byte[] mapData = this.clientStorage!.SerializeForSharing();
-		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket {
-			PlayerUID = capi.World.Player.PlayerUID,
-			SyncWithTablePos = tablePos,
-			ShareMapData = mapData
-		}));
+		using MemoryStream stream = new();
+		using(VersionedWriter output = VersionedWriter.Create(stream, leaveOpen: true)) {
+			this.clientStorage!.Save(output, ref this.dirty);
+			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket {
+				PlayerUID = capi.World.Player.PlayerUID,
+				SyncWithTablePos = tablePos,
+				ShareMapData = stream.ToArray()
+			}));
+		}
 	}
 
 	private void ExecuteSyncWithTable(IServerPlayer player, BlockPos tablePos, byte[] playerMapData) {
@@ -136,17 +140,17 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return;
 		}
 		ServerPlayerMap serverPlayerMap = this.serverStorage!.GetOrCreate(player.PlayerUID);
-		(byte[]? tableMapData, bool tableWasUpdated) = table.SynchronizeMap(playerMapData, serverPlayerMap, this.background);
+		(byte[]? tableData, int updatedChunks) = table.SynchronizeMap(playerMapData, serverPlayerMap, this.background, ref this.dirty);
 		this.dirty = true;
 
-		if(tableWasUpdated)
+		if(updatedChunks > 0)
 			player.SendLocalisedMessage(0, Lang.Get("mapper:commandresult-cartographers-table-uploaded"));
 		else
 			player.SendLocalisedMessage(0, Lang.Get("mapper:commandresult-cartographers-table-uploaded-nothing"));
 
-		if(tableMapData != null) {
+		if(tableData != null) {
 			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket {
-				SharedMapData = tableMapData
+				SharedMapData = tableData
 			}));
 		}
 	}
@@ -230,8 +234,9 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 
 		if(packet.SharedMapData != null) {
-			ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
-			int mergedCount = this.clientStorage!.MergeSharedData(packet.SharedMapData, this.background!, readyMapPieces);
+			using ClientMapStorage incoming = new ClientMapStorage();
+			incoming.Load(VersionedReader.Create(new MemoryStream(packet.SharedMapData, false), compressed: true), this.background!);
+			int mergedCount = this.clientStorage!.MergeSharedData(incoming, this.background!);
 			if(mergedCount > 0) {
 				((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded"));
 			}
