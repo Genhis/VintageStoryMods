@@ -31,7 +31,7 @@ public class BlockEntityCartographersTable : BlockEntity {
 		}
 	}
 
-	public (byte[]? tableData, bool tableWasUpdated) SynchronizeMap(byte[] playerPixelData, ServerPlayerMap playerServerMap) {
+	public (byte[]?, bool) SynchronizeMap(byte[] playerPixelData, ServerPlayerMap playerServerMap) {
 		BlockEntityCartographersTable.MergeRegions(playerServerMap.Regions, this.regions);
 		BlockEntityCartographersTable.MergeRegions(this.regions, playerServerMap.Regions);
 
@@ -46,7 +46,7 @@ public class BlockEntityCartographersTable : BlockEntity {
 		return (null, false);
 	}
 
-	private (byte[] data, bool hadChanges) MergeCompressedPixelData(byte[] incomingData) {
+	private (byte[], bool) MergeCompressedPixelData(byte[] incomingData) {
 		Dictionary<FastVec2i, (byte zoomLevel, byte colorLevel, int[]? pixels)> chunks = [];
 		bool hadChanges = false;
 		byte[]? existingData = ((ICoreServerAPI)this.Api).WorldManager.SaveGame.GetData(this.StorageKey);
