@@ -134,7 +134,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		}
 
 		ServerPlayerMap playerServerMap = this.serverStorage!.GetOrCreate(player.PlayerUID);
-		(byte[]? tableMapData, bool tableWasUpdated) = table.SynchronizeMap(player, playerMapData, playerServerMap);
+		(byte[]? tableMapData, bool tableWasUpdated) = table.SynchronizeMap(playerMapData, playerServerMap);
 		this.dirty = true;
 
 		if(tableWasUpdated)
@@ -142,7 +142,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		else
 			player.SendLocalisedMessage(0, Lang.Get("mapper:commandresult-cartographers-table-uploaded-nothing"));
 
-		if(tableMapData != null && tableMapData.Length > 4) {
+		if(tableMapData != null) {
 			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket {
 				SharedMapData = tableMapData
 			}));
