@@ -78,50 +78,22 @@ public class ClientMapStorage : IDisposable {
 		dirtyFlag = false;
 	}
 
-	public byte[] SerializeForSharing() {
-		using MemoryStream stream = new();
-		using(VersionedWriter output = VersionedWriter.Create(stream, leaveOpen: true, compressed: true)) {
-			using IDisposable guard = this.SaveLock.SharedLock();
 
-			int count = 0;
-			foreach(KeyValuePair<FastVec2i, MapChunk> item in this.Chunks)
-				if(item.Value.ZoomLevel != ColorAndZoom.EmptyZoomLevel)
-					count++;
-
-			output.Write(count);
-			foreach(KeyValuePair<FastVec2i, MapChunk> item in this.Chunks) {
-				if(item.Value.ZoomLevel == ColorAndZoom.EmptyZoomLevel)
-					continue;
-				output.Write(item.Key);
-				item.Value.Save(output);
-			}
-		}
-		return stream.ToArray();
-	}
-
-	public int MergeSharedData(byte[] data, MapBackground background, ConcurrentQueue<ReadyMapPiece> readyMapPieces) {
-		using MemoryStream stream = new(data, false);
-		using VersionedReader input = VersionedReader.Create(stream, compressed: true);
+	// Update map if
+	// 1. Map chunk doesn't exist
+	// 2. Zoom level is lower/resolution is higher
+	// 3. Zoom level is the same but color level is higher
+	// This means that resolution takes precedence over color level.
+	// i.e. higher resolution B/W maps replaces lower resolution colored maps
+	// - this was an intentional design decision
+	public int MergeSharedData(ClientMapStorage incoming, MapBackground background) {
 		using IDisposable guard = this.SaveLock.ExclusiveLock();
 
 		int mergedCount = 0;
-		int count = input.ReadInt32();
-		for(int i = 0; i < count; ++i) {
-			FastVec2i chunkPosition = input.ReadFastVec2i();
-			MapChunk incomingChunk = new MapChunk(input, chunkPosition, background);
+		foreach((FastVec2i chunkPosition, MapChunk incomingChunk) in incoming.Chunks) {
 
-			// Update map if
-			// 1. Map chunk doesn't exist
-			// 2. Zoom level is lower/resolution is higher
-			// 3. Zoom level is the same but color level is higher
-			// This means that resolution takes precedence over color level.
-			// i.e. higher resolution B/W maps replaces lower resolution colored maps
-			// - this was an intentional design decision
-			if(!this.Chunks.TryGetValue(chunkPosition, out MapChunk existingChunk) ||
-			   incomingChunk.ZoomLevel < existingChunk.ZoomLevel ||
-			   incomingChunk.ZoomLevel == existingChunk.ZoomLevel && incomingChunk.ColorLevel > existingChunk.ColorLevel) {
+			if(!this.Chunks.TryGetValue(chunkPosition, out MapChunk existingChunk) || incomingChunk > existingChunk) {
 				this.Chunks[chunkPosition] = incomingChunk;
-				readyMapPieces.Enqueue(new ReadyMapPiece { Cord = chunkPosition, Pixels = incomingChunk.Pixels });
 
 				this.ChunksToRedraw.Remove(chunkPosition);
 				mergedCount++;
