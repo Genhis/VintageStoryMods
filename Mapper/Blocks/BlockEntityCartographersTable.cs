@@ -31,12 +31,12 @@ public class BlockEntityCartographersTable : BlockEntity {
 		}
 	}
 
-	public (byte[]?, bool) SynchronizeMap(byte[] playerPixelData, ServerPlayerMap playerServerMap) {
+	public (byte[]?, bool) SynchronizeMap(byte[] playerPixelData, ServerPlayerMap playerServerMap, MapBackground background) {
 		BlockEntityCartographersTable.MergeRegions(playerServerMap.Regions, this.regions);
 		BlockEntityCartographersTable.MergeRegions(this.regions, playerServerMap.Regions);
 
 		if(playerPixelData != null) {
-			(byte[]? mergedPixelData, bool tableWasUpdated) = this.MergeCompressedPixelData(playerPixelData);
+			(byte[]? mergedPixelData, bool tableWasUpdated) = this.MergeCompressedPixelData(playerPixelData, background);
 			if(tableWasUpdated) {
 				((ICoreServerAPI)this.Api).WorldManager.SaveGame.StoreData(this.StorageKey, mergedPixelData);
 				this.MarkDirty(true);
@@ -46,24 +46,18 @@ public class BlockEntityCartographersTable : BlockEntity {
 		return (null, false);
 	}
 
-	private (byte[], bool) MergeCompressedPixelData(byte[] incomingData) {
-		Dictionary<FastVec2i, (byte zoomLevel, byte colorLevel, int[]? pixels)> chunks = [];
+	private (byte[], bool) MergeCompressedPixelData(byte[] incomingData, MapBackground background) {
+		Dictionary<FastVec2i, MapChunk> chunks = [];
 		bool hadChanges = false;
-		byte[]? existingData = ((ICoreServerAPI)this.Api).WorldManager.SaveGame.GetData(this.StorageKey);
 
+		byte[]? existingData = ((ICoreServerAPI)this.Api).WorldManager.SaveGame.GetData(this.StorageKey);
 		if(existingData != null) {
 			// Load existing table data
 			try {
-				using MemoryStream stream = new(existingData, false);
-				using VersionedReader input = VersionedReader.Create(stream, compressed: true);
-				int count = input.ReadInt32();
-				for(int i = 0; i < count; ++i) {
+				using VersionedReader input = VersionedReader.Create(new MemoryStream(existingData, false), compressed: true);
+				for(int i = 0; i < input.ReadInt32(); ++i) {
 					FastVec2i pos = input.ReadFastVec2i();
-					byte data = input.ReadUInt8();
-					byte colorLevel = (byte)(data >> ColorAndZoom.ZoomBits);
-					byte zoomLevel = (byte)(data & ColorAndZoom.ZoomMask);
-					int[]? pixels = colorLevel > 0 ? ReadPixels(input, zoomLevel) : null;
-					chunks[pos] = (zoomLevel, colorLevel, pixels);
+					chunks[pos] = new(input, pos, background);
 				}
 			}
 			catch {
@@ -73,16 +67,11 @@ public class BlockEntityCartographersTable : BlockEntity {
 
 		// Merge incoming player data, keeping better quality chunks
 		try {
-			using MemoryStream stream = new(incomingData, false);
-			using VersionedReader input = VersionedReader.Create(stream, compressed: true);
+			using VersionedReader input = VersionedReader.Create(new MemoryStream(incomingData, false), compressed: true);
 			int count = input.ReadInt32();
 			for(int i = 0; i < count; ++i) {
 				FastVec2i pos = input.ReadFastVec2i();
-				byte data = input.ReadUInt8();
-				byte incomingColor = (byte)(data >> ColorAndZoom.ZoomBits);
-				byte incomingZoom = (byte)(data & ColorAndZoom.ZoomMask);
-				int[]? incomingPixels = incomingColor > 0 ? ReadPixels(input, incomingZoom) : null;
-
+				MapChunk incoming = new(input, pos, background);
 
 				// Update map if
 				// 1. Map chunk doesn't exist
@@ -91,11 +80,11 @@ public class BlockEntityCartographersTable : BlockEntity {
 				// This means that resolution takes precedence over color level.
 				// i.e. higher resolution B/W maps replaces lower resolution colored maps
 				// - this was an intentional design decision
-				if(!chunks.TryGetValue(pos, out (byte zoomLevel, byte colorLevel, int[]? pixels) existing) ||
-					 incomingZoom < existing.zoomLevel ||
-					 incomingZoom == existing.zoomLevel && incomingColor > existing.colorLevel
+				if(!chunks.TryGetValue(pos, out MapChunk existing) ||
+					 incoming.ZoomLevel < existing.ZoomLevel ||
+					 incoming.ZoomLevel == existing.ZoomLevel && incoming.ColorLevel > existing.ColorLevel
 				) {
-					chunks[pos] = (incomingZoom, incomingColor, incomingPixels);
+					chunks[pos] = incoming;
 					hadChanges = true;
 				}
 			}
@@ -108,39 +97,12 @@ public class BlockEntityCartographersTable : BlockEntity {
 		using MemoryStream outStream = new();
 		using(VersionedWriter output = VersionedWriter.Create(outStream, leaveOpen: true, compressed: true)) {
 			output.Write(chunks.Count);
-			foreach(KeyValuePair<FastVec2i, (byte zoomLevel, byte colorLevel, int[]? pixels)> item in chunks) {
+			foreach(KeyValuePair<FastVec2i, MapChunk> item in chunks) {
 				output.Write(item.Key);
-				byte data = (byte)((item.Value.colorLevel << ColorAndZoom.ZoomBits) | (item.Value.zoomLevel & ColorAndZoom.ZoomMask));
-				output.Write(data);
-				if(item.Value.colorLevel > 0 && item.Value.pixels != null)
-					WritePixels(output, item.Value.pixels, item.Value.zoomLevel);
+				item.Value.Save(output);
 			}
 		}
 		return (outStream.ToArray(), hadChanges);
-	}
-
-	private static int[] ReadPixels(VersionedReader input, byte zoomLevel) {
-		int[] pixels = new int[MapChunk.Area];
-		int scaleFactor = 1 << zoomLevel;
-		for(int y = 0; y < MapChunk.Size; y += scaleFactor)
-			for(int x = 0; x < MapChunk.Size; x += scaleFactor) {
-				int pixel = input.ReadInt32();
-				for(int innerY = 0; innerY < scaleFactor; ++innerY) {
-					int rowOffset = (y + innerY) * MapChunk.Size + x;
-					for(int innerX = 0; innerX < scaleFactor; ++innerX)
-						pixels[rowOffset + innerX] = pixel;
-				}
-			}
-		return pixels;
-	}
-
-	private static void WritePixels(VersionedWriter output, int[] pixels, byte zoomLevel) {
-		int scaleFactor = 1 << zoomLevel;
-		for(int y = 0; y < MapChunk.Size; y += scaleFactor) {
-			int rowOffset = y * MapChunk.Size;
-			for(int x = 0; x < MapChunk.Size; x += scaleFactor)
-				output.Write(pixels[rowOffset + x]);
-		}
 	}
 
 	public override void OnBlockRemoved() {

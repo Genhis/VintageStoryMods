@@ -106,7 +106,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return TextCommandResult.Error(Lang.Get($"mapper:commandresult-mapper-restore-{side}-error"));
 
 		if(this.api is ICoreClientAPI capi)
-			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = capi.World.Player.PlayerUID, RecoverMap = true}));
+			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket { PlayerUID = capi.World.Player.PlayerUID, RecoverMap = true }));
 		else
 			this.status = Status.Enabled;
 		return TextCommandResult.Success(Lang.Get($"mapper:commandresult-mapper-restore-{side}-success"));
@@ -125,16 +125,18 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 	private void ExecuteSyncWithTable(IServerPlayer player, BlockPos tablePos, byte[] playerMapData) {
-		ICoreServerAPI sapi = (ICoreServerAPI)this.api;
+		BlockEntity? be = this.api.World.BlockAccessor.GetBlockEntity(tablePos);
 
-		BlockEntity? be = sapi.World.BlockAccessor.GetBlockEntity(tablePos);
 		if(be is not BlockEntityCartographersTable table) {
 			player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.Get("mapper:error-cartographers-table-not-found"), EnumChatType.Notification);
 			return;
 		}
-
-		ServerPlayerMap playerServerMap = this.serverStorage!.GetOrCreate(player.PlayerUID);
-		(byte[]? tableMapData, bool tableWasUpdated) = table.SynchronizeMap(playerMapData, playerServerMap);
+		if(this.background == null) {
+			player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.Get("mapper:error-execute-sync-without-background"), EnumChatType.Notification);
+			return;
+		}
+		ServerPlayerMap serverPlayerMap = this.serverStorage!.GetOrCreate(player.PlayerUID);
+		(byte[]? tableMapData, bool tableWasUpdated) = table.SynchronizeMap(playerMapData, serverPlayerMap, this.background);
 		this.dirty = true;
 
 		if(tableWasUpdated)
