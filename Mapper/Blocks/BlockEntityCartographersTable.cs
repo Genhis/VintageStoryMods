@@ -20,7 +20,7 @@ public class BlockEntityCartographersTable : BlockEntity {
 	private readonly Dictionary<RegionPosition, MapRegion> regions = [];
 	private string StorageKey => $"mapper:table:{this.Pos.X}_{this.Pos.Y}_{this.Pos.Z}";
 
-	private void MergeRegions(Dictionary<RegionPosition, MapRegion> sourceRegions, Dictionary<RegionPosition, MapRegion> targetRegions) {
+	private static void MergeRegions(Dictionary<RegionPosition, MapRegion> sourceRegions, Dictionary<RegionPosition, MapRegion> targetRegions) {
 		foreach((RegionPosition regionPos, MapRegion sourceRegion) in sourceRegions) {
 			if(!targetRegions.TryGetValue(regionPos, out MapRegion targetRegion)) {
 				targetRegion = new MapRegion();
@@ -32,8 +32,8 @@ public class BlockEntityCartographersTable : BlockEntity {
 	}
 
 	public (byte[]? tableData, bool tableWasUpdated) SynchronizeMap(byte[] playerPixelData, ServerPlayerMap playerServerMap) {
-		this.MergeRegions(playerServerMap.Regions, this.regions);
-		this.MergeRegions(this.regions, playerServerMap.Regions);
+		BlockEntityCartographersTable.MergeRegions(playerServerMap.Regions, this.regions);
+		BlockEntityCartographersTable.MergeRegions(this.regions, playerServerMap.Regions);
 
 		if(playerPixelData != null) {
 			(byte[]? mergedPixelData, bool tableWasUpdated) = this.MergeCompressedPixelData(playerPixelData);
@@ -43,7 +43,7 @@ public class BlockEntityCartographersTable : BlockEntity {
 			}
 			return (mergedPixelData, tableWasUpdated);
 		}
-		return ([], false);
+		return (null, false);
 	}
 
 	private (byte[] data, bool hadChanges) MergeCompressedPixelData(byte[] incomingData) {
@@ -92,8 +92,8 @@ public class BlockEntityCartographersTable : BlockEntity {
 				// i.e. higher resolution B/W maps replaces lower resolution colored maps
 				// - this was an intentional design decision
 				if(!chunks.TryGetValue(pos, out (byte zoomLevel, byte colorLevel, int[]? pixels) existing) ||
-				   incomingZoom < existing.zoomLevel ||
-				   incomingZoom == existing.zoomLevel && incomingColor > existing.colorLevel
+					 incomingZoom < existing.zoomLevel ||
+					 incomingZoom == existing.zoomLevel && incomingColor > existing.colorLevel
 				) {
 					chunks[pos] = (incomingZoom, incomingColor, incomingPixels);
 					hadChanges = true;
@@ -140,46 +140,6 @@ public class BlockEntityCartographersTable : BlockEntity {
 			int rowOffset = y * MapChunk.Size;
 			for(int x = 0; x < MapChunk.Size; x += scaleFactor)
 				output.Write(pixels[rowOffset + x]);
-		}
-	}
-
-	public override void ToTreeAttributes(ITreeAttribute tree) {
-		base.ToTreeAttributes(tree);
-		try {
-			using MemoryStream regionStream = new();
-			using(VersionedWriter output = VersionedWriter.Create(regionStream, leaveOpen: true)) {
-				output.Write(this.regions.Count);
-				foreach(KeyValuePair<RegionPosition, MapRegion> item in this.regions) {
-					item.Key.Save(output);
-					item.Value.Save(output);
-				}
-			}
-			tree.SetBytes("mapperRegions", regionStream.ToArray());
-		}
-		catch(Exception ex) {
-			this.Api?.Logger.Error("[mapper] Failed to save CartographersTable regions to tree: " + ex.Message);
-		}
-	}
-
-	public override void FromTreeAttributes(ITreeAttribute tree, IWorldAccessor worldAccessForResolve) {
-		base.FromTreeAttributes(tree, worldAccessForResolve);
-
-		byte[]? regionData = tree.GetBytes("mapperRegions");
-		this.regions.Clear();
-		if(regionData != null && regionData.Length > 0) {
-			try {
-				using MemoryStream stream = new(regionData, false);
-				using VersionedReader input = VersionedReader.Create(stream);
-				int count = input.ReadInt32();
-				for(int i = 0; i < count; ++i) {
-					RegionPosition pos = new(input);
-					MapRegion region = new(input);
-					this.regions[pos] = region;
-				}
-			}
-			catch(Exception ex) {
-				this.Api?.Logger.Error("[mapper] Failed to load CartographersTable regions from tree: " + ex.Message);
-			}
 		}
 	}
 
