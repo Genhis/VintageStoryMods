@@ -204,7 +204,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		}
 
 		if(packet.RecoverMap)
-			this.mapSink.SendMapDataToClient(this, (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), SerializerUtil.Serialize(new ServerToClientPacket { Changes = this.serverStorage![packet.PlayerUID].PrepareClientRecovery(), RecoverMap = true }));
+			this.mapSink.SendMapDataToClient(this, (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), SerializerUtil.Serialize(new ServerToClientPacket{Changes = this.serverStorage![packet.PlayerUID].PrepareClientRecovery(), RecoverMap = true}));
 		else if(packet.SyncWithTablePos != null && packet.ShareMapData != null) {
 			IServerPlayer player = (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID);
 			this.ExecuteSyncWithTable(player, packet.SyncWithTablePos, packet.ShareMapData);
