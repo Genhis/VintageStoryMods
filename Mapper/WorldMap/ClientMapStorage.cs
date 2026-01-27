@@ -38,7 +38,7 @@ public class ClientMapStorage : IDisposable {
 		}
 	}
 
-	public void Load(VersionedReader input, MapBackground background) {
+	public void Load(VersionedReader input, MapBackground? background) {
 		int count = input.ReadInt32();
 		this.Chunks.EnsureCapacity(Math.Min(count, SaveLoadExtensions.MaxInitialContainerSize));
 		for(int i = 0; i < count; ++i) {
@@ -86,7 +86,7 @@ public class ClientMapStorage : IDisposable {
 	// This means that resolution takes precedence over color level.
 	// i.e. higher resolution B/W maps replaces lower resolution colored maps
 	// - this was an intentional design decision
-	public int MergeSharedData(ClientMapStorage incoming, MapBackground background) {
+	public int MergeSharedData(ClientMapStorage incoming) {
 		using IDisposable guard = this.SaveLock.ExclusiveLock();
 
 		int mergedCount = 0;

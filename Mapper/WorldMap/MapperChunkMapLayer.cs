@@ -118,14 +118,14 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return;
 
 		using MemoryStream stream = new();
-		using(VersionedWriter output = VersionedWriter.Create(stream, leaveOpen: true)) {
+		using(VersionedWriter output = VersionedWriter.Create(stream, leaveOpen: true, compressed: true)) {
 			this.clientStorage!.Save(output, ref this.dirty);
-			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket {
-				PlayerUID = capi.World.Player.PlayerUID,
-				SyncWithTablePos = tablePos,
-				ShareMapData = stream.ToArray()
-			}));
 		}
+		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket {
+			PlayerUID = capi.World.Player.PlayerUID,
+			SyncWithTablePos = tablePos,
+			ShareMapData = stream.ToArray()
+		}));
 	}
 
 	private void ExecuteSyncWithTable(IServerPlayer player, BlockPos tablePos, byte[] playerMapData) {
@@ -133,10 +133,6 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 		if(be is not BlockEntityCartographersTable table) {
 			player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.Get("mapper:error-cartographers-table-not-found"), EnumChatType.Notification);
-			return;
-		}
-		if(this.background == null) {
-			player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.Get("mapper:error-execute-sync-without-background"), EnumChatType.Notification);
 			return;
 		}
 		ServerPlayerMap serverPlayerMap = this.serverStorage!.GetOrCreate(player.PlayerUID);
@@ -160,7 +156,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return durability;
 
 		Dictionary<FastVec2i, ColorAndZoom> changes = [];
-		Dictionary<RegionPosition, MapRegion> storedRegions = this.serverStorage![player.PlayerUID].Regions;
+		Dictionary<RegionPosition, MapRegion> storedRegions = this.serverStorage!.GetOrCreate(player.PlayerUID).Regions;
 
 		foreach(FastVec2i pos in Iterators.Circle(chunkPosition, radius)) {
 			RegionPosition position = RegionPosition.FromChunkPosition(pos);
@@ -236,7 +232,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(packet.SharedMapData != null) {
 			using ClientMapStorage incoming = new ClientMapStorage();
 			incoming.Load(VersionedReader.Create(new MemoryStream(packet.SharedMapData, false), compressed: true), this.background!);
-			int mergedCount = this.clientStorage!.MergeSharedData(incoming, this.background!);
+			int mergedCount = this.clientStorage!.MergeSharedData(incoming);
 			if(mergedCount > 0) {
 				((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded"));
 			}
