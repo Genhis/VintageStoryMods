@@ -119,7 +119,9 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 		using MemoryStream stream = new();
 		using(VersionedWriter output = VersionedWriter.Create(stream, leaveOpen: true, compressed: true)) {
-			this.clientStorage!.Save(output, ref this.dirty);
+			// Use a dummy flag - we don't want to reset the actual dirty flag when serializing for network
+			bool dummy = false;
+			this.clientStorage!.Save(output, ref dummy);
 		}
 		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket {
 			PlayerUID = capi.World.Player.PlayerUID,
