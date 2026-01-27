@@ -1,5 +1,11 @@
 <Project>
-	<Target Name="PackageZip" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
-		<Exec Command='powershell -File "$(SolutionDir)/create-release-archive.ps1" $(MSBuildProjectDirectory) $(ModVersion)' />
-	</Target>
+    <Target Name="PackageZip" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+        <Message Text="Deleting $(TargetDir)$(TargetName).deps.json" />
+        <Delete Files="$(TargetDir)$(TargetName).deps.json" />
+        <Message Text="Deleting $(TargetDir)$(TargetName).pdb" />
+        <Delete Files="$(TargetDir)$(TargetName).pdb" />
+        <ZipDirectory DestinationFile="bin/$(TargetName).zip"
+                      SourceDirectory="$(TargetDir)"
+                      Overwrite="true" />
+    </Target>
 </Project>
