@@ -66,16 +66,7 @@ public readonly struct MapRegion {
 
 			ColorAndZoom targetData = this.data[i];
 
-			// Update map if
-			// 1. Map chunk doesn't exist
-			// 2. Zoom level is lower/resolution is higher
-			// 3. Zoom level is the same but color level is higher
-			// This means that resolution takes precedence over color level.
-			// i.e. higher resolution B/W maps replaces lower resolution colored maps
-			// - this was an intentional design decision
-			if(targetData.Empty ||
-			   sourceData.ZoomLevel < targetData.ZoomLevel ||
-			   sourceData.ZoomLevel == targetData.ZoomLevel && sourceData.Color > targetData.Color) {
+			if(targetData.Empty || sourceData > targetData) {
 				this.data[i] = sourceData;
 				FastVec2i chunkPos = new FastVec2i(chunkOffsetX + i % Size, chunkOffsetY + i / Size);
 				changes[chunkPos] = sourceData;

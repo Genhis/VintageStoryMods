@@ -78,20 +78,11 @@ public class ClientMapStorage : IDisposable {
 		dirtyFlag = false;
 	}
 
-
-	// Update map if
-	// 1. Map chunk doesn't exist
-	// 2. Zoom level is lower/resolution is higher
-	// 3. Zoom level is the same but color level is higher
-	// This means that resolution takes precedence over color level.
-	// i.e. higher resolution B/W maps replaces lower resolution colored maps
-	// - this was an intentional design decision
 	public int MergeSharedData(ClientMapStorage incoming) {
 		using IDisposable guard = this.SaveLock.ExclusiveLock();
 
 		int mergedCount = 0;
 		foreach((FastVec2i chunkPosition, MapChunk incomingChunk) in incoming.Chunks) {
-
 			if(!this.Chunks.TryGetValue(chunkPosition, out MapChunk existingChunk) || incomingChunk > existingChunk) {
 				this.Chunks[chunkPosition] = incomingChunk;
 
