@@ -6,19 +6,20 @@ using System.Collections.Generic;
 using System.IO;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
-using Vintagestory.API.MathTools;
-using Vintagestory.API.Server;
 
 /// <summary>
 /// Block entity for the Cartographer's Table.
 /// 
-/// Data is stored in two parts:
-/// - Region metadata (zoom/color levels per chunk) - stored in TreeAttributes for block entity sync
-/// - Pixel data - stored separately in world save to avoid size limits on TreeAttribute serialization
+/// All data is stored in TreeAttributes:
+/// - "regions" - Region metadata (zoom/color levels per chunk)
+/// - "pixelData" - Serialized pixel data for all map chunks
 /// </summary>
 public class BlockEntityCartographersTable : BlockEntity {
+	private const string RegionsKey = "regions";
+	private const string PixelDataKey = "pixelData";
+
 	private readonly Dictionary<RegionPosition, MapRegion> regions = [];
-	private string StorageKey => $"mapper:table:{this.Pos.X}_{this.Pos.Y}_{this.Pos.Z}";
+	private byte[]? pixelData;
 
 	private static void MergeRegions(Dictionary<RegionPosition, MapRegion> sourceRegions, Dictionary<RegionPosition, MapRegion> targetRegions) {
 		foreach((RegionPosition regionPos, MapRegion sourceRegion) in sourceRegions) {
@@ -40,10 +41,10 @@ public class BlockEntityCartographersTable : BlockEntity {
 		using ClientMapStorage incomingData = new();
 		using ClientMapStorage existingData = new();
 		incomingData.Load(VersionedReader.Create(new MemoryStream(playerPixelData, false), compressed: true), background);
-		byte[]? saveGameData = ((ICoreServerAPI)this.Api).WorldManager.SaveGame.GetData(this.StorageKey);
-		if(saveGameData != null) {
+
+		if(this.pixelData != null) {
 			try {
-				existingData.Load(VersionedReader.Create(new MemoryStream(saveGameData, false), compressed: true), background);
+				existingData.Load(VersionedReader.Create(new MemoryStream(this.pixelData, false), compressed: true), background);
 			}
 			catch(Exception ex) {
 				this.Api.Logger.Warning($"[mapper] Cartographer's Table data was corrupted, starting fresh: {ex.Message}");
@@ -60,25 +61,59 @@ public class BlockEntityCartographersTable : BlockEntity {
 		}
 
 		if(updatedChunks > 0) {
-			// Only save data if we actually updated table
-			((ICoreServerAPI)this.Api).WorldManager.SaveGame.StoreData(this.StorageKey, tableData.ToArray());
-			this.MarkDirty(true);
+			// Store the pixel data and mark dirty for save (but don't sync to clients - data is too large)
+			this.pixelData = tableData.ToArray();
+			this.MarkDirty(false);
 		}
 		// But always return existing table data
 		// since we can have new data the user needs
 		return (tableData.ToArray(), updatedChunks);
 	}
 
-	public override void OnBlockRemoved() {
-		base.OnBlockRemoved();
-		if(this.Api is ICoreServerAPI sapi) {
-			try {
-				sapi.WorldManager.SaveGame.StoreData(this.StorageKey, null);
+	public override void ToTreeAttributes(ITreeAttribute tree) {
+		base.ToTreeAttributes(tree);
+
+		// Save regions
+		if(this.regions.Count > 0) {
+			using MemoryStream regionsStream = new();
+			using(VersionedWriter output = VersionedWriter.Create(regionsStream, leaveOpen: true, compressed: true)) {
+				output.Write(this.regions.Count);
+				foreach(KeyValuePair<RegionPosition, MapRegion> item in this.regions) {
+					item.Key.Save(output);
+					item.Value.Save(output);
+				}
 			}
-			catch {
-				// Ignore cleanup errors
+			tree.SetBytes(RegionsKey, regionsStream.ToArray());
+		}
+
+		// Save pixel data
+		if(this.pixelData != null) {
+			tree.SetBytes(PixelDataKey, this.pixelData);
+		}
+	}
+
+	public override void FromTreeAttributes(ITreeAttribute tree, IWorldAccessor worldAccessForResolve) {
+		base.FromTreeAttributes(tree, worldAccessForResolve);
+
+		// Load regions
+		this.regions.Clear();
+		byte[]? regionsData = tree.GetBytes(RegionsKey);
+		if(regionsData != null && regionsData.Length > 0) {
+			try {
+				using VersionedReader input = VersionedReader.Create(new MemoryStream(regionsData, false), compressed: true);
+				int count = input.ReadInt32();
+				for(int i = 0; i < count; ++i) {
+					this.regions[new RegionPosition(input)] = new MapRegion(input);
+				}
+			}
+			catch(Exception ex) {
+				this.Api?.Logger.Warning($"[mapper] Failed to load Cartographer's Table regions: {ex.Message}");
+				this.regions.Clear();
 			}
 		}
+
+		// Load pixel data
+		this.pixelData = tree.GetBytes(PixelDataKey);
 	}
 
 	public int GetRegionCount() => this.regions.Count;

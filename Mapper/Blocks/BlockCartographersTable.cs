@@ -3,7 +3,6 @@ namespace Mapper.Blocks;
 using Mapper.WorldMap;
 using Vintagestory.API.Common;
 using Vintagestory.API.Client;
-using Vintagestory.API.Server;
 using Vintagestory.API.Config;
 using Vintagestory.API.Util;
 
