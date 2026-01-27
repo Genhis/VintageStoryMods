@@ -19,10 +19,11 @@ public readonly struct MapChunk {
 		this.modeAndZoom = new ColorAndZoom(colorLevel, zoomLevel);
 	}
 
-	public MapChunk(VersionedReader input, FastVec2i chunkPosition, MapBackground background) {
+	public MapChunk(VersionedReader input, FastVec2i chunkPosition, MapBackground? background) {
 		this.modeAndZoom = new(input);
 		if(this.modeAndZoom.Color == 0) {
-			this.Pixels = background.GetPixels(chunkPosition, this.ZoomLevel);
+			// No pixel data was written for Color == 0 chunks
+			this.Pixels = background?.GetPixels(chunkPosition, this.ZoomLevel) ?? new int[MapChunk.Area];
 			return;
 		}
 

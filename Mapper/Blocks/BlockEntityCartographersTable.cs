@@ -31,7 +31,7 @@ public class BlockEntityCartographersTable : BlockEntity {
 		}
 	}
 
-	public (byte[]?, int) SynchronizeMap(byte[] playerPixelData, ServerPlayerMap playerServerMap, MapBackground background, ref bool dirtyFlag) {
+	public (byte[]?, int) SynchronizeMap(byte[] playerPixelData, ServerPlayerMap playerServerMap, MapBackground? background, ref bool dirtyFlag) {
 		// Update regions
 		BlockEntityCartographersTable.MergeRegions(playerServerMap.Regions, this.regions);
 		BlockEntityCartographersTable.MergeRegions(this.regions, playerServerMap.Regions);
@@ -40,12 +40,24 @@ public class BlockEntityCartographersTable : BlockEntity {
 		using ClientMapStorage incomingData = new();
 		using ClientMapStorage existingData = new();
 		incomingData.Load(VersionedReader.Create(new MemoryStream(playerPixelData, false), compressed: true), background);
-		existingData.Load(VersionedReader.Create(new MemoryStream(((ICoreServerAPI)this.Api).WorldManager.SaveGame.GetData(this.StorageKey))), background);
+		byte[]? saveGameData = ((ICoreServerAPI)this.Api).WorldManager.SaveGame.GetData(this.StorageKey);
+		if(saveGameData != null) {
+			try {
+				existingData.Load(VersionedReader.Create(new MemoryStream(saveGameData, false), compressed: true), background);
+			}
+			catch(Exception ex) {
+				this.Api.Logger.Warning($"[mapper] Cartographer's Table data was corrupted, starting fresh: {ex.Message}");
+				existingData.Chunks.Clear();
+				existingData.ChunksToRedraw.Clear();
+			}
+		}
 
 		// Merge data and save result
-		int updatedChunks = existingData.MergeSharedData(incomingData, background);
+		int updatedChunks = existingData.MergeSharedData(incomingData);
 		MemoryStream tableData = new();
-		existingData.Save(VersionedWriter.Create(tableData, compressed: true), ref dirtyFlag);
+		using(VersionedWriter output = VersionedWriter.Create(tableData, leaveOpen: true, compressed: true)) {
+			existingData.Save(output, ref dirtyFlag);
+		}
 
 		if(updatedChunks > 0) {
 			// Only save data if we actually updated table
