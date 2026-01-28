@@ -107,8 +107,8 @@ public static class WaypointHelper {
 	}
 
 	/// <summary>
-	/// Replaces all of a player's waypoints with the provided list.
-	/// Removes existing waypoints for the player and adds the new ones.
+	/// Adds/overwrites all of a player's waypoints with the provided list.
+	/// Existing unique waypoints are kept (but they shouldn't exist since the is table updated first).
 	/// </summary>
 	/// <returns>Number of waypoints that changed (added, removed, or modified).</returns>
 	public static int ReplacePlayerWaypoints(ICoreServerAPI sapi, IServerPlayer player, Dictionary<string, Waypoint> newWaypoints) {
