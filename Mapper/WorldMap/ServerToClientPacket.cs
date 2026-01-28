@@ -10,4 +10,5 @@ public class ServerToClientPacket {
 	public Vec3d? LastKnownPosition;
 	public bool RecoverMap;
 	public byte[]? SharedMapData;
+	public int DownloadedWaypoints;
 }
