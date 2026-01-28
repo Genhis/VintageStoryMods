@@ -3,11 +3,13 @@ namespace Mapper.WorldMap;
 using Mapper.Util;
 using Mapper.Util.IO;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
+using Vintagestory.GameContent;
 
 public class ClientMapStorage : IDisposable {
 	public readonly Dictionary<FastVec2i, MapChunk> Chunks = [];
@@ -36,7 +38,7 @@ public class ClientMapStorage : IDisposable {
 		}
 	}
 
-	public void Load(VersionedReader input, MapBackground background) {
+	public void Load(VersionedReader input, MapBackground? background) {
 		int count = input.ReadInt32();
 		this.Chunks.EnsureCapacity(Math.Min(count, SaveLoadExtensions.MaxInitialContainerSize));
 		for(int i = 0; i < count; ++i) {
@@ -74,5 +76,20 @@ public class ClientMapStorage : IDisposable {
 			item.Value.Save(output);
 		}
 		dirtyFlag = false;
+	}
+
+	public int MergeSharedData(ClientMapStorage incoming) {
+		using IDisposable guard = this.SaveLock.ExclusiveLock();
+
+		int mergedCount = 0;
+		foreach((FastVec2i chunkPosition, MapChunk incomingChunk) in incoming.Chunks) {
+			if(!this.Chunks.TryGetValue(chunkPosition, out MapChunk existingChunk) || incomingChunk > existingChunk) {
+				this.Chunks[chunkPosition] = incomingChunk;
+
+				this.ChunksToRedraw.Remove(chunkPosition);
+				mergedCount++;
+			}
+		}
+		return mergedCount;
 	}
 }

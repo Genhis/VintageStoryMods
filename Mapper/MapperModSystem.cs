@@ -2,6 +2,7 @@ namespace Mapper;
 
 using HarmonyLib;
 using Mapper.Behaviors;
+using Mapper.Blocks;
 using Mapper.Items;
 using Mapper.Util.Harmony;
 using Mapper.Util.IO;
@@ -32,6 +33,8 @@ public class MapperModSystem : ModSystem {
 			api.RegisterCollectibleBehaviorClass("MapperCompassNeedle", typeof(BehaviorCompassNeedle));
 			api.RegisterItemClass("MapperMap", typeof(ItemMap));
 			api.RegisterItemClass("MapperPaintbrush", typeof(ItemPaintbrush));
+			api.RegisterBlockClass("MapperCartographersTable", typeof(BlockCartographersTable));
+			api.RegisterBlockEntityClass("MapperCartographersTable", typeof(BlockEntityCartographersTable));
 		}
 	}
 

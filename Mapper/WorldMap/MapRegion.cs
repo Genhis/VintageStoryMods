@@ -54,6 +54,27 @@ public readonly struct MapRegion {
 		return this.data[MapRegion.GetIndex(chunkPosition)].ZoomLevel;
 	}
 
+	public readonly Dictionary<FastVec2i, ColorAndZoom> MergeFrom(MapRegion sourceRegion, RegionPosition regionPosition) {
+		int chunkOffsetX = regionPosition.X * Size;
+		int chunkOffsetY = regionPosition.Y * Size;
+		Dictionary<FastVec2i, ColorAndZoom>? changes = [];
+
+		for(int i = 0; i < Area; ++i) {
+			ColorAndZoom sourceData = sourceRegion.data[i];
+			if(sourceData.Empty)
+				continue;
+
+			ColorAndZoom targetData = this.data[i];
+
+			if(targetData.Empty || sourceData > targetData) {
+				this.data[i] = sourceData;
+				FastVec2i chunkPos = new FastVec2i(chunkOffsetX + i % Size, chunkOffsetY + i / Size);
+				changes[chunkPos] = sourceData;
+			}
+		}
+		return changes;
+	}
+
 	private static int GetIndex(FastVec2i chunkPosition) {
 		return chunkPosition.Y % Size * Size + chunkPosition.X % Size;
 	}
