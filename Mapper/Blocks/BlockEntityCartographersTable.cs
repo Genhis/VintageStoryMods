@@ -61,7 +61,6 @@ public class BlockEntityCartographersTable : BlockEntity {
 		}
 
 		if(updatedChunks > 0) {
-			// Store the pixel data and mark dirty for save (but don't sync to clients - data is too large)
 			this.pixelData = tableData.ToArray();
 			this.MarkDirty(false);
 		}
