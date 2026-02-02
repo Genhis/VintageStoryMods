@@ -21,8 +21,12 @@ public readonly struct MapChunk {
 		this.modeAndZoom = new ColorAndZoom(colorLevel, zoomLevel);
 	}
 
-	public MapChunk(VersionedReader input) {
+	public MapChunk(VersionedReader input, FastVec2i chunkPosition, MapBackground? background) {
 		this.modeAndZoom = new(input);
+		if(this.modeAndZoom.Color == 0 && background != null) {
+			this.Pixels = background.GetPixels(chunkPosition, this.ZoomLevel);
+			return;
+		}
 
 		this.Pixels = new int[MapChunk.Area];
 		int scaleFactor = 1 << Math.Min(this.ZoomLevel, MaxZoomLevel);

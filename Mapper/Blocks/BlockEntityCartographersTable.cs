@@ -60,7 +60,7 @@ public class BlockEntityCartographersTable : BlockEntity {
 		return updatedChunks;
 	}
 
-	public (byte[]?, int) SynchronizeMap(byte[] playerChunkData, ServerPlayerMap playerServerMap, List<Waypoint> playerWaypoints, MapBackground? background, ref bool dirtyFlag) {
+	public (byte[]?, int) SynchronizeMap(byte[] playerChunkData, ServerPlayerMap playerServerMap, List<Waypoint> playerWaypoints, MapBackground background, ref bool dirtyFlag) {
 		// Update regions
 		MergeRegions(playerServerMap.Regions, this.Regions);
 		MergeRegions(this.Regions, playerServerMap.Regions);
@@ -82,7 +82,7 @@ public class BlockEntityCartographersTable : BlockEntity {
 		{
 			using MemoryStream inStream = new MemoryStream(playerChunkData, false);
 			using VersionedReader input = VersionedReader.Create(inStream, compressed: true);
-			input.ReadChunks(incomingChunks);
+			input.ReadChunks(incomingChunks, background);
 		}
 
 		// Merge chunk data
@@ -223,7 +223,7 @@ public class BlockEntityCartographersTable : BlockEntity {
 				}
 
 				using VersionedReader input = VersionedReader.Create(new MemoryStream(allChunksData, false), compressed: true);
-				input.ReadChunks(this.Chunks);
+				input.ReadChunks(this.Chunks, null); // No background saved in Cartographer's table, just pure chunks
 				this.Api?.Logger.Notification($"[mapper] Cartographer's Table loaded {this.Chunks.Count} chunks from {numParts} parts");
 			}
 			catch(Exception ex) {

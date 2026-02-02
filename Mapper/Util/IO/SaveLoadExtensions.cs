@@ -69,11 +69,12 @@ public static class SaveLoadExtensions {
 	}
 
 
-	public static void ReadChunks(this VersionedReader input, Dictionary<FastVec2i, MapChunk> chunks) {
+	public static void ReadChunks(this VersionedReader input, Dictionary<FastVec2i, MapChunk> chunks, MapBackground? background) {
 		int count = input.ReadInt32();
 		chunks.EnsureCapacity(Math.Min(count, SaveLoadExtensions.MaxInitialContainerSize));
 		for(int i = 0; i < count; ++i) {
-			chunks[input.ReadFastVec2i()] = new MapChunk(input);
+			FastVec2i pos = input.ReadFastVec2i();
+			chunks[pos] = new MapChunk(input, pos, background);
 		}
 	}
 

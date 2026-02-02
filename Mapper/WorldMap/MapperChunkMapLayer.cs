@@ -146,7 +146,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		// Get player's current waypoints from the game
 		List<Waypoint> playerWaypoints = WaypointHelper.GetPlayerWaypoints(sapi, player.PlayerUID);
 
-		(byte[]? mapData, int uploadedWaypoints) = table.SynchronizeMap(playerMapData, serverPlayerMap, playerWaypoints, this.background, ref this.dirty);
+		(byte[]? mapData, int uploadedWaypoints) = table.SynchronizeMap(playerMapData, serverPlayerMap, playerWaypoints, this.background!, ref this.dirty);
 		this.dirty = true;
 
 		// Replace player's waypoints with all waypoints from the table
@@ -176,7 +176,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return durability;
 
 		Dictionary<FastVec2i, ColorAndZoom> changes = [];
-		Dictionary<RegionPosition, MapRegion> storedRegions = this.serverStorage!.GetOrCreate(player.PlayerUID).Regions;
+		Dictionary<RegionPosition, MapRegion> storedRegions = this.serverStorage![player.PlayerUID].Regions;
 
 		foreach(FastVec2i pos in Iterators.Circle(chunkPosition, radius)) {
 			RegionPosition position = RegionPosition.FromChunkPosition(pos);
@@ -248,17 +248,6 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(!this.Enabled)
 			return;
 
-		int mergedCount = 0;
-		if(packet.SharedMapData != null) {
-			using VersionedReader input = VersionedReader.Create(new MemoryStream(packet.SharedMapData, false), compressed: true);
-			Dictionary<FastVec2i, MapChunk> chunks = [];
-			input.ReadChunks(chunks);
-			mergedCount = BlockEntityCartographersTable.MergeChunks(this.clientStorage!.Chunks, chunks, this.clientStorage!.Chunks);
-			if(mergedCount > 0) {
-				this.dirty = true;
-			}
-		}
-
 		if(packet.LastKnownPosition != null) {
 			this.lastKnownPosition = packet.LastKnownPosition;
 			if(this.mapSink is WorldMapManager manager)
@@ -270,17 +259,29 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			lock(this.chunksToRedrawLock!)
 				this.UpdateChunks(packet.Changes);
 
-		// Build upload message
-		if(mergedCount > 0 || packet.DownloadedWaypoints > 0) {
-			if(mergedCount > 0 && packet.DownloadedWaypoints > 0)
-				((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-both", packet.DownloadedWaypoints));
-			else if(mergedCount > 0)
-				((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-map"));
-			else
-				((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-waypoints", packet.DownloadedWaypoints));
-		}
-		else {
-			((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-nothing"));
+
+		if(packet.SharedMapData != null) {
+			int mergedCount = 0;
+			using VersionedReader input = VersionedReader.Create(new MemoryStream(packet.SharedMapData, false), compressed: true);
+			Dictionary<FastVec2i, MapChunk> chunks = [];
+			input.ReadChunks(chunks, this.background!);
+			mergedCount = BlockEntityCartographersTable.MergeChunks(this.clientStorage!.Chunks, chunks, this.clientStorage!.Chunks);
+			if(mergedCount > 0) {
+				this.dirty = true;
+			}
+
+			// Build upload message
+			if(mergedCount > 0 || packet.DownloadedWaypoints > 0) {
+				if(mergedCount > 0 && packet.DownloadedWaypoints > 0)
+					((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-both", packet.DownloadedWaypoints));
+				else if(mergedCount > 0)
+					((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-map"));
+				else
+					((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-waypoints", packet.DownloadedWaypoints));
+			}
+			else {
+				((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-nothing"));
+			}
 		}
 	}
 
