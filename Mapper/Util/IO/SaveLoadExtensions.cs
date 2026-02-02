@@ -1,5 +1,8 @@
 namespace Mapper.Util.IO;
 
+using System;
+using Mapper.WorldMap;
+using System.Collections.Generic;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
@@ -8,7 +11,7 @@ public static class SaveLoadExtensions {
 	public const int MaxInitialContainerSize = 1024;
 
 	public static FastVec2i ReadFastVec2i(this VersionedReader input) {
-		return new FastVec2i{val = input.ReadUInt64()};
+		return new FastVec2i { val = input.ReadUInt64() };
 	}
 
 	public static void Write(this VersionedWriter output, FastVec2i value) {
@@ -63,5 +66,22 @@ public static class SaveLoadExtensions {
 		output.Write(waypoint.OwningPlayerUid ?? "");
 		output.Write(waypoint.OwningPlayerGroupId);
 		output.Write(waypoint.Temporary);
+	}
+
+
+	public static void ReadChunks(this VersionedReader input, Dictionary<FastVec2i, MapChunk> chunks) {
+		int count = input.ReadInt32();
+		chunks.EnsureCapacity(Math.Min(count, SaveLoadExtensions.MaxInitialContainerSize));
+		for(int i = 0; i < count; ++i) {
+			chunks[input.ReadFastVec2i()] = new MapChunk(input);
+		}
+	}
+
+	public static void Write(this VersionedWriter output, Dictionary<FastVec2i, MapChunk> chunks) {
+		output.Write(chunks.Count);
+		foreach((FastVec2i position, MapChunk chunk) in chunks) {
+			output.Write(position);
+			chunk.Save(output);
+		}
 	}
 }

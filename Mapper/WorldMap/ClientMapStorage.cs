@@ -43,7 +43,7 @@ public class ClientMapStorage : IDisposable {
 		this.Chunks.EnsureCapacity(Math.Min(count, SaveLoadExtensions.MaxInitialContainerSize));
 		for(int i = 0; i < count; ++i) {
 			FastVec2i chunkPosition = input.ReadFastVec2i();
-			this.Chunks[chunkPosition] = new MapChunk(input, chunkPosition, background);
+			this.Chunks[chunkPosition] = new MapChunk(input);
 		}
 
 		count = input.ReadInt32();
@@ -65,31 +65,24 @@ public class ClientMapStorage : IDisposable {
 	public void Save(VersionedWriter output, ref bool dirtyFlag) {
 		using IDisposable guard = this.SaveLock.ExclusiveLock();
 		output.Write(this.Chunks.Count);
-		foreach(KeyValuePair<FastVec2i, MapChunk> item in this.Chunks) {
-			output.Write(item.Key);
-			item.Value.Save(output);
+		foreach((FastVec2i pos, MapChunk chunk) in this.Chunks) {
+			output.Write(pos);
+			chunk.Save(output);
 		}
 
 		output.Write(this.ChunksToRedraw.Count);
-		foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in this.ChunksToRedraw) {
-			output.Write(item.Key);
-			item.Value.Save(output);
+		foreach((FastVec2i pos, ColorAndZoom chunk) in this.ChunksToRedraw) {
+			output.Write(pos);
+			chunk.Save(output);
 		}
 		dirtyFlag = false;
 	}
 
-	public int MergeSharedData(ClientMapStorage incoming) {
-		using IDisposable guard = this.SaveLock.ExclusiveLock();
-
-		int mergedCount = 0;
-		foreach((FastVec2i chunkPosition, MapChunk incomingChunk) in incoming.Chunks) {
-			if(!this.Chunks.TryGetValue(chunkPosition, out MapChunk existingChunk) || incomingChunk > existingChunk) {
-				this.Chunks[chunkPosition] = incomingChunk;
-
-				this.ChunksToRedraw.Remove(chunkPosition);
-				mergedCount++;
-			}
+	public byte[] Save(ref bool dirtyFlag) {
+		using MemoryStream tableData = new();
+		using(VersionedWriter output = VersionedWriter.Create(tableData, leaveOpen: true, compressed: true)) {
+			this.Save(output, ref dirtyFlag);
 		}
-		return mergedCount;
+		return tableData.ToArray();
 	}
 }

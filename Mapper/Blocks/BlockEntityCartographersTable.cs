@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
+using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 using Vintagestory.GameContent;
 
@@ -13,22 +14,18 @@ using Vintagestory.GameContent;
 /// Block entity for the Cartographer's Table.
 /// 
 /// Data storage:
-/// - TreeAttributes: "regions", "waypoints"
-/// - SaveGame.StoreData: pixel data
+/// - TreeAttributes: "regions", "waypoints", "chunks" (split into parts)
+/// - Each byte array must stay under 32KB due to VS TreeAttribute limitation
 /// </summary>
 public class BlockEntityCartographersTable : BlockEntity {
-	private const string RegionsKey = "regions";
-	private const string WaypointsKey = "waypoints";
+	private const string RegionsKey = "cartographersTableRegionsDataKey";
+	private const string WaypointsKey = "cartographersTableWaypointsDataKey";
+	private const string ChunksKey = "cartographersTableChunksDataKey";
+	private const int MaxBytesPerAttribute = 30000; // Stay safely under 32KB limit
 
 	private readonly Dictionary<RegionPosition, MapRegion> Regions = [];
 	public readonly Dictionary<string, Waypoint> Waypoints = [];
-	private byte[]? PixelData;
-	private bool pixelDataLoaded;
-
-	/// <summary>
-	/// Gets a unique storage key for this table's pixel data based on position.
-	/// </summary>
-	private string PixelDataStorageKey => $"mapper:cartographers-table:{this.Pos.X}:{this.Pos.Y}:{this.Pos.Z}";
+	private readonly Dictionary<FastVec2i, MapChunk> Chunks = [];
 
 	private static void MergeRegions(Dictionary<RegionPosition, MapRegion> sourceRegions, Dictionary<RegionPosition, MapRegion> targetRegions) {
 		foreach((RegionPosition regionPos, MapRegion sourceRegion) in sourceRegions) {
@@ -41,17 +38,6 @@ public class BlockEntityCartographersTable : BlockEntity {
 		}
 	}
 
-	/// <summary>
-	/// Loads pixel data from SaveGame storage if not already loaded.
-	/// </summary>
-	private void EnsurePixelDataLoaded() {
-		if(this.pixelDataLoaded || this.Api?.Side != EnumAppSide.Server)
-			return;
-
-		this.pixelDataLoaded = true;
-		this.PixelData = ((ICoreServerAPI)this.Api).WorldManager.SaveGame.GetData(this.PixelDataStorageKey);
-	}
-
 	private static string BytesToString(long byteCount) {
 		string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB
 		if(byteCount == 0)
@@ -62,20 +48,19 @@ public class BlockEntityCartographersTable : BlockEntity {
 		return (Math.Sign(byteCount) * num).ToString() + suf[place];
 	}
 
-	/// <summary>
-	/// Saves pixel data to SaveGame storage.
-	/// </summary>
-	private void SavePixelData() {
-		if(this.Api?.Side != EnumAppSide.Server)
-			return;
-
-		if(this.PixelData != null) {
-			this.Api.Logger.Notification($"[mapper] Saving {BytesToString(this.PixelData.Length)} of PixelData");
-			((ICoreServerAPI)this.Api).WorldManager.SaveGame.StoreData(this.PixelDataStorageKey, this.PixelData);
+	public static int MergeChunks(Dictionary<FastVec2i, MapChunk> saveLocation, Dictionary<FastVec2i, MapChunk> incoming, Dictionary<FastVec2i, MapChunk> comparator) {
+		int updatedChunks = 0;
+		foreach((FastVec2i chunkPosition, MapChunk incomingChunk) in incoming) {
+			if(!(comparator.TryGetValue(chunkPosition, out MapChunk existingChunk)) || incomingChunk > existingChunk) {
+				saveLocation[chunkPosition] = incomingChunk;
+				updatedChunks++;
+			}
 		}
+
+		return updatedChunks;
 	}
 
-	public (byte[]?, int, int) SynchronizeMap(byte[] playerPixelData, ServerPlayerMap playerServerMap, List<Waypoint> playerWaypoints, MapBackground? background, ref bool dirtyFlag) {
+	public (byte[]?, int) SynchronizeMap(byte[] playerChunkData, ServerPlayerMap playerServerMap, List<Waypoint> playerWaypoints, MapBackground? background, ref bool dirtyFlag) {
 		// Update regions
 		MergeRegions(playerServerMap.Regions, this.Regions);
 		MergeRegions(this.Regions, playerServerMap.Regions);
@@ -92,57 +77,42 @@ public class BlockEntityCartographersTable : BlockEntity {
 			}
 		}
 
-		// Ensure pixel data is loaded before merging
-		this.EnsurePixelDataLoaded();
+		// Load chunk data
+		Dictionary<FastVec2i, MapChunk> incomingChunks = [];
+		{
+			using MemoryStream inStream = new MemoryStream(playerChunkData, false);
+			using VersionedReader input = VersionedReader.Create(inStream, compressed: true);
+			input.ReadChunks(incomingChunks);
+		}
 
-		// Load pixel data
-		using ClientMapStorage incomingData = new();
-		using ClientMapStorage existingData = new();
-		incomingData.Load(VersionedReader.Create(new MemoryStream(playerPixelData, false), compressed: true), background);
+		// Merge chunk data
+		int updatedExistingChunks = MergeChunks(this.Chunks, incomingChunks, this.Chunks);
+		Dictionary<FastVec2i, MapChunk> outgoingChunks = [];
+		int updatedOutgoingChunks = MergeChunks(outgoingChunks, this.Chunks, incomingChunks);
 
-		if(this.PixelData != null) {
-			try {
-				existingData.Load(VersionedReader.Create(new MemoryStream(this.PixelData, false), compressed: true), background);
+
+		this.Api.Logger.Notification($"[mapper] Cartographer's Table recieved {incomingChunks.Count} chunks ({BytesToString(playerChunkData.Length)}) and updated {updatedExistingChunks} internal chunks");
+
+		// Save serialize chunks
+		byte[] outBytes;
+		using(MemoryStream outStream = new()) {
+			using(VersionedWriter output = VersionedWriter.Create(outStream, leaveOpen: true, compressed: true)) {
+				output.Write(this.Chunks);
 			}
-			catch(Exception ex) {
-				this.Api.Logger.Warning($"[mapper] Cartographer's Table data was corrupted, starting fresh: {ex.Message}");
-				existingData.Chunks.Clear();
-				existingData.ChunksToRedraw.Clear();
-			}
+			outBytes = outStream.ToArray();
 		}
 
-		// Merge pixel data and save result
-		int updatedChunks = existingData.MergeSharedData(incomingData);
-		MemoryStream tableData = new();
-		using(VersionedWriter output = VersionedWriter.Create(tableData, leaveOpen: true, compressed: true)) {
-			existingData.Save(output, ref dirtyFlag);
-		}
-
-		if(updatedChunks > 0) {
-			this.PixelData = tableData.ToArray();
-			this.SavePixelData();
-			this.MarkDirty(false);
-		}
+		this.Api.Logger.Notification($"[mapper] Cartographer's Table sending {updatedOutgoingChunks} chunks ({BytesToString(outBytes.Length)})");
 
 		// Return table data for the player to download
-		return (tableData.ToArray(), updatedChunks, updatedWaypoints);
-	}
-
-	public override void OnBlockRemoved() {
-		base.OnBlockRemoved();
-
-		// Clean up stored pixel data when table is removed (server-side only)
-		if(this.Api?.Side == EnumAppSide.Server) {
-			((ICoreServerAPI)this.Api).WorldManager.SaveGame.StoreData(this.PixelDataStorageKey, null);
-		}
+		return (outBytes, updatedWaypoints);
 	}
 
 	public override void ToTreeAttributes(ITreeAttribute tree) {
 		base.ToTreeAttributes(tree);
 
-		// Save regions (small metadata, OK for network sync)
-		if(this.Regions.Count > 0) {
-			using MemoryStream regionsStream = new();
+		// Save regions
+		using(MemoryStream regionsStream = new()) {
 			using(VersionedWriter output = VersionedWriter.Create(regionsStream, leaveOpen: true, compressed: true)) {
 				output.Write(this.Regions.Count);
 				foreach((RegionPosition pos, MapRegion region) in this.Regions) {
@@ -153,9 +123,8 @@ public class BlockEntityCartographersTable : BlockEntity {
 			tree.SetBytes(RegionsKey, regionsStream.ToArray());
 		}
 
-		// Save waypoints (small metadata, OK for network sync)
-		if(this.Waypoints.Count > 0) {
-			using MemoryStream waypointsStream = new();
+		// Save waypoints
+		using(MemoryStream waypointsStream = new()) {
 			using(VersionedWriter output = VersionedWriter.Create(waypointsStream, leaveOpen: true, compressed: true)) {
 				output.Write(this.Waypoints.Count);
 				foreach(Waypoint waypoint in this.Waypoints.Values) {
@@ -165,8 +134,36 @@ public class BlockEntityCartographersTable : BlockEntity {
 			tree.SetBytes(WaypointsKey, waypointsStream.ToArray());
 		}
 
-		// NOTE: PixelData is NOT stored in TreeAttributes because it's too large for network sync.
-		// It's stored separately via SaveGame.StoreData in SavePixelData().
+		// Save chunks - split into multiple attributes to stay under 32KB limit
+		if(this.Chunks.Count > 0) {
+			// First, serialize all chunk data
+			byte[] allChunksData;
+			using(MemoryStream chunksStream = new()) {
+				using(VersionedWriter output = VersionedWriter.Create(chunksStream, leaveOpen: true, compressed: true)) {
+					output.Write(this.Chunks);
+				}
+				allChunksData = chunksStream.ToArray();
+			}
+
+			// Split into parts under 30KB each
+			int numParts = (allChunksData.Length + MaxBytesPerAttribute - 1) / MaxBytesPerAttribute;
+			tree.SetInt(ChunksKey + "_parts", numParts);
+			tree.SetInt(ChunksKey + "_totalLen", allChunksData.Length);
+
+			for(int i = 0; i < numParts; i++) {
+				int offset = i * MaxBytesPerAttribute;
+				int length = Math.Min(MaxBytesPerAttribute, allChunksData.Length - offset);
+				byte[] part = new byte[length];
+				Array.Copy(allChunksData, offset, part, 0, length);
+				tree.SetBytes(ChunksKey + "_" + i, part);
+			}
+
+			this.Api.Logger.Notification($"[mapper] Cartographer's Table saving {this.Chunks.Count} chunks ({BytesToString(allChunksData.Length)}) in {numParts} parts");
+		}
+		else {
+			tree.SetInt(ChunksKey + "_parts", 0);
+			this.Api.Logger.Notification($"[mapper] Cartographer's Table saved nothing");
+		}
 	}
 
 	public override void FromTreeAttributes(ITreeAttribute tree, IWorldAccessor worldAccessForResolve) {
@@ -208,7 +205,31 @@ public class BlockEntityCartographersTable : BlockEntity {
 			}
 		}
 
-		// PixelData is loaded lazily from SaveGame storage when needed
-		this.pixelDataLoaded = false;
+		// Load chunks - reassemble from multiple attributes
+		this.Chunks.Clear();
+		int numParts = tree.GetInt(ChunksKey + "_parts", 0);
+		if(numParts > 0) {
+			try {
+				int totalLen = tree.GetInt(ChunksKey + "_totalLen", 0);
+				byte[] allChunksData = new byte[totalLen];
+				int offset = 0;
+
+				for(int i = 0; i < numParts; i++) {
+					byte[]? part = tree.GetBytes(ChunksKey + "_" + i);
+					if(part != null) {
+						Array.Copy(part, 0, allChunksData, offset, part.Length);
+						offset += part.Length;
+					}
+				}
+
+				using VersionedReader input = VersionedReader.Create(new MemoryStream(allChunksData, false), compressed: true);
+				input.ReadChunks(this.Chunks);
+				this.Api?.Logger.Notification($"[mapper] Cartographer's Table loaded {this.Chunks.Count} chunks from {numParts} parts");
+			}
+			catch(Exception ex) {
+				this.Api?.Logger.Warning($"[mapper] Failed to load Cartographer's Table chunks: {ex.Message}");
+				this.Chunks.Clear();
+			}
+		}
 	}
 }

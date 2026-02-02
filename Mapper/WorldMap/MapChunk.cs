@@ -1,5 +1,6 @@
 namespace Mapper.WorldMap;
 
+using System;
 using Mapper.Util.IO;
 using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
@@ -7,6 +8,7 @@ using Vintagestory.API.MathTools;
 public readonly struct MapChunk {
 	public const int Size = GlobalConstants.ChunkSize;
 	public const int Area = Size * Size;
+	public const byte MaxZoomLevel = 5;
 
 	public readonly int[] Pixels;
 	private readonly ColorAndZoom modeAndZoom;
@@ -19,16 +21,11 @@ public readonly struct MapChunk {
 		this.modeAndZoom = new ColorAndZoom(colorLevel, zoomLevel);
 	}
 
-	public MapChunk(VersionedReader input, FastVec2i chunkPosition, MapBackground? background) {
+	public MapChunk(VersionedReader input) {
 		this.modeAndZoom = new(input);
-		if(this.modeAndZoom.Color == 0) {
-			// No pixel data was written for Color == 0 chunks
-			this.Pixels = background?.GetPixels(chunkPosition, this.ZoomLevel) ?? new int[MapChunk.Area];
-			return;
-		}
 
 		this.Pixels = new int[MapChunk.Area];
-		int scaleFactor = 1 << this.ZoomLevel;
+		int scaleFactor = 1 << Math.Min(this.ZoomLevel, MaxZoomLevel);
 		for(int y = 0; y < MapChunk.Size; y += scaleFactor)
 			for(int x = 0; x < MapChunk.Size; x += scaleFactor) {
 				int pixel = input.ReadInt32();
@@ -42,10 +39,8 @@ public readonly struct MapChunk {
 
 	public readonly void Save(VersionedWriter output) {
 		this.modeAndZoom.Save(output);
-		if(this.modeAndZoom.Color == 0)
-			return;
 
-		int scaleFactor = 1 << this.ZoomLevel;
+		int scaleFactor = 1 << Math.Min(this.ZoomLevel, MaxZoomLevel);
 		for(int y = 0; y < MapChunk.Size; y += scaleFactor) {
 			int rowOffset = y * MapChunk.Size;
 			for(int x = 0; x < MapChunk.Size; x += scaleFactor)
