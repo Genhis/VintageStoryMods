@@ -23,10 +23,6 @@ public class DictionaryQueue<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TVal
 		return new(key, value);
 	}
 
-	public bool Remove(TKey key) {
-		return this.dictionary.Remove(key);
-	}
-
 	public void Clear() {
 		this.dictionary.Clear();
 		this.queue.Clear();
