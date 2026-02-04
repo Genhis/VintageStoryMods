@@ -1,8 +1,5 @@
 <Project>
 	<PropertyGroup>
-		<!-- Fix for .NET 10 SDK + OmniSharp compatibility -->
-		<UseAttributeForTargetFrameworkInfoPropertyNames>false</UseAttributeForTargetFrameworkInfoPropertyNames>
-		
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<GenerateDependencyFile>false</GenerateDependencyFile>
 		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
@@ -10,25 +7,6 @@
 		<Nullable>enable</Nullable>
 		<OutputPath>$(MSBuildProjectDirectory)/bin/$(Configuration)/Mods/mod</OutputPath>
 		<TargetFramework>net8.0</TargetFramework>
-		
-		<!-- Path to vsapi source for IDE features -->
-		<VsApiSourcePath>$(MSBuildThisFileDirectory)vsapi</VsApiSourcePath>
-		
-		<!-- 
-			Detect if this is a design-time/IDE build vs an actual compilation.
-			
-			Detection methods (in order of reliability):
-			1. UseVsApiSource=true (explicit override via command line or environment)
-			2. DesignTimeBuild=true (set by Visual Studio and OmniSharp)
-			3. BuildingProject=false (sometimes set during IDE evaluation)
-			
-			You can force IDE mode by adding to your .csproj or passing as property:
-				<UseVsApiSource>true</UseVsApiSource>
-			Or: dotnet build /p:UseVsApiSource=false (to force DLL mode)
-		-->
-		<UseVsApiSource Condition="'$(UseVsApiSource)' == '' And '$(DesignTimeBuild)' == 'true'">true</UseVsApiSource>
-		<UseVsApiSource Condition="'$(UseVsApiSource)' == '' And '$(BuildingProject)' == 'false'">true</UseVsApiSource>
-		<UseVsApiSource Condition="'$(UseVsApiSource)' == ''">false</UseVsApiSource>
 	</PropertyGroup>
 	<PropertyGroup>
 		<Company></Company>
@@ -37,22 +15,7 @@
 		<ModVersion Condition="Exists('$(MSBuildProjectDirectory)/modinfo.json')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/modinfo.json')), '"version": "([^"]+)"').Groups[1].Value)</ModVersion>
 		<Version>$(ModVersion.Split('-')[0])</Version>
 	</PropertyGroup>
-
-	<!--
-		IDE MODE: Use ProjectReference to vsapi for full IntelliSense support.
-		This gives you Go-To-Definition, Find All References, etc.
-	-->
-	<ItemGroup Condition="'$(UseVsApiSource)' == 'true' And Exists('$(VsApiSourcePath)/VintagestoryAPI.csproj')">
-		<ProjectReference Include="$(VsApiSourcePath)/VintagestoryAPI.csproj">
-			<Private>false</Private>
-		</ProjectReference>
-	</ItemGroup>
-
-	<!--
-		BUILD MODE: Use DLL references for actual compilation.
-		This ensures compatibility with the game's actual assemblies.
-	-->
-	<ItemGroup Condition="'$(UseVsApiSource)' != 'true'">
+	<ItemGroup>
 		<Reference Include="VintagestoryAPI">
 			<HintPath>$(VINTAGE_STORY)/VintagestoryAPI.dll</HintPath>
 			<Private>false</Private>
@@ -69,14 +32,6 @@
 			<HintPath>$(VINTAGE_STORY)/Mods/VSCreativeMod.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
-		<Reference Include="VintagestoryLib">
-			<HintPath>$(VINTAGE_STORY)/VintagestoryLib.dll</HintPath>
-			<Private>false</Private>
-		</Reference>
-	</ItemGroup>
-
-	<!-- Third-party libraries - always needed -->
-	<ItemGroup>
 		<Reference Include="Newtonsoft.Json">
 			<HintPath>$(VINTAGE_STORY)/Lib/Newtonsoft.Json.dll</HintPath>
 			<Private>False</Private>
@@ -84,6 +39,10 @@
 		<Reference Include="0Harmony">
 			<HintPath>$(VINTAGE_STORY)/Lib/0Harmony.dll</HintPath>
 			<Private>False</Private>
+		</Reference>
+		<Reference Include="VintagestoryLib">
+			<HintPath>$(VINTAGE_STORY)/VintagestoryLib.dll</HintPath>
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="protobuf-net">
 			<HintPath>$(VINTAGE_STORY)/Lib/protobuf-net.dll</HintPath>
@@ -98,12 +57,8 @@
 			<Private>False</Private>
 		</Reference>
 	</ItemGroup>
-					
 	<ItemGroup>
 		<Content Include="$(MSBuildProjectDirectory)/modinfo.json">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="$(MSBuildProjectDirectory)/assets/**/*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 		<Content Include="$(MSBuildProjectDirectory)/modicon.png">
