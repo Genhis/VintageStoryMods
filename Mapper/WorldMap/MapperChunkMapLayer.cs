@@ -204,7 +204,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 		if(changes.Count > 0) {
 			this.dirty = true;
-			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket { Changes = changes }));
+			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Changes = changes}));
 		}
 		return durability;
 	}
@@ -286,7 +286,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.UpdateChunks(packet.Changes);
 	}
 
-	private void UpdateChunks(Dictionary<FastVec2i, ColorAndZoom> changes, Dictionary<FastVec2i, MapChunk>? newChunks = null) {
+	private void UpdateChunks(Dictionary<FastVec2i, ColorAndZoom> changes) {
 		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
 		using IDisposable guard = this.clientStorage!.SaveLock.SharedLock();
 		this.dirty = true;

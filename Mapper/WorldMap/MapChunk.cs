@@ -9,7 +9,7 @@ public readonly struct MapChunk {
 	public const int Area = Size * Size;
 
 	public readonly int[] Pixels;
-	public readonly ColorAndZoom modeAndZoom;
+	private readonly ColorAndZoom modeAndZoom;
 
 	public readonly byte ZoomLevel => this.modeAndZoom.ZoomLevel;
 	public readonly byte ColorLevel => this.modeAndZoom.Color;
@@ -40,6 +40,8 @@ public readonly struct MapChunk {
 
 	public readonly void Save(VersionedWriter output) {
 		this.modeAndZoom.Save(output);
+		if(this.modeAndZoom.Color == 0)
+			return;
 
 		int scaleFactor = 1 << this.ZoomLevel;
 		for(int y = 0; y < MapChunk.Size; y += scaleFactor) {
