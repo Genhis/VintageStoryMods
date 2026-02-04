@@ -1,6 +1,5 @@
 namespace Mapper.Util.IO;
 
-using System;
 using Mapper.WorldMap;
 using System.Collections.Generic;
 using Vintagestory.API.MathTools;
@@ -11,7 +10,7 @@ public static class SaveLoadExtensions {
 	public const int MaxInitialContainerSize = 1024;
 
 	public static FastVec2i ReadFastVec2i(this VersionedReader input) {
-		return new FastVec2i { val = input.ReadUInt64() };
+		return new FastVec2i{val = input.ReadUInt64()};
 	}
 
 	public static void Write(this VersionedWriter output, FastVec2i value) {
@@ -71,7 +70,6 @@ public static class SaveLoadExtensions {
 
 	public static void ReadChunks(this VersionedReader input, Dictionary<FastVec2i, MapChunk> chunks, MapBackground? background) {
 		int count = input.ReadInt32();
-		chunks.EnsureCapacity(Math.Min(count, SaveLoadExtensions.MaxInitialContainerSize));
 		for(int i = 0; i < count; ++i) {
 			FastVec2i pos = input.ReadFastVec2i();
 			chunks[pos] = new MapChunk(input, pos, background);

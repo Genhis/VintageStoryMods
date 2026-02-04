@@ -4,6 +4,7 @@ using Mapper.WorldMap;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
@@ -38,7 +39,7 @@ public class BlockEntityCartographersTable : BlockEntity {
 		}
 	}
 
-	private static string BytesToString(long byteCount) {
+	public static string BytesToString(long byteCount) {
 		string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB
 		if(byteCount == 0)
 			return "0" + suf[0];
@@ -48,11 +49,11 @@ public class BlockEntityCartographersTable : BlockEntity {
 		return (Math.Sign(byteCount) * num).ToString() + suf[place];
 	}
 
-	public static int MergeChunks(Dictionary<FastVec2i, MapChunk> saveLocation, Dictionary<FastVec2i, MapChunk> incoming, Dictionary<FastVec2i, MapChunk> comparator) {
+	public int MergeChunks(Dictionary<FastVec2i, MapChunk> incoming) {
 		int updatedChunks = 0;
 		foreach((FastVec2i chunkPosition, MapChunk incomingChunk) in incoming) {
-			if(!(comparator.TryGetValue(chunkPosition, out MapChunk existingChunk)) || incomingChunk > existingChunk) {
-				saveLocation[chunkPosition] = incomingChunk;
+			if(!(this.Chunks.TryGetValue(chunkPosition, out MapChunk existingChunk)) || incomingChunk > existingChunk) {
+				this.Chunks[chunkPosition] = incomingChunk;
 				updatedChunks++;
 			}
 		}
@@ -60,10 +61,13 @@ public class BlockEntityCartographersTable : BlockEntity {
 		return updatedChunks;
 	}
 
-	public (byte[]?, int) SynchronizeMap(byte[] playerChunkData, ServerPlayerMap playerServerMap, List<Waypoint> playerWaypoints, MapBackground background, ref bool dirtyFlag) {
+	public (Dictionary<FastVec2i, MapChunk>, int, int) SynchronizeMap(ServerPlayerMap playerServerMap, Dictionary<FastVec2i, MapChunk> incomingChunks, List<Waypoint> playerWaypoints) {
 		// Update regions
 		MergeRegions(playerServerMap.Regions, this.Regions);
-		MergeRegions(this.Regions, playerServerMap.Regions);
+		// We only store explored regions
+		// A user must explore a region to share the map with others
+		Dictionary<RegionPosition, MapRegion> exploredRegions = playerServerMap.Regions.Where(r => incomingChunks.ContainsKey(new FastVec2i(r.Key.X, r.Key.Y))).ToDictionary();
+		MergeRegions(this.Regions, exploredRegions);
 
 		// Update waypoints: player waypoints overwrite table waypoints
 		int updatedWaypoints = 0;
@@ -77,35 +81,19 @@ public class BlockEntityCartographersTable : BlockEntity {
 			}
 		}
 
-		// Load chunk data
-		Dictionary<FastVec2i, MapChunk> incomingChunks = [];
-		{
-			using MemoryStream inStream = new MemoryStream(playerChunkData, false);
-			using VersionedReader input = VersionedReader.Create(inStream, compressed: true);
-			input.ReadChunks(incomingChunks, background);
-		}
-
 		// Merge chunk data
-		int updatedExistingChunks = MergeChunks(this.Chunks, incomingChunks, this.Chunks);
+		int updatedChunks = MergeChunks(incomingChunks);
+
+		// Build chunks to send back
 		Dictionary<FastVec2i, MapChunk> outgoingChunks = [];
-		int updatedOutgoingChunks = MergeChunks(outgoingChunks, this.Chunks, incomingChunks);
-
-
-		this.Api.Logger.Notification($"[mapper] Cartographer's Table recieved {incomingChunks.Count} chunks ({BytesToString(playerChunkData.Length)}) and updated {updatedExistingChunks} internal chunks");
-
-		// Save serialize chunks
-		byte[] outBytes;
-		using(MemoryStream outStream = new()) {
-			using(VersionedWriter output = VersionedWriter.Create(outStream, leaveOpen: true, compressed: true)) {
-				output.Write(this.Chunks);
+		foreach((FastVec2i pos, MapChunk existingChunk) in this.Chunks) {
+			if(!(incomingChunks.TryGetValue(pos, out MapChunk incomingChunk)) || existingChunk > incomingChunk) {
+				outgoingChunks[pos] = existingChunk;
 			}
-			outBytes = outStream.ToArray();
 		}
-
-		this.Api.Logger.Notification($"[mapper] Cartographer's Table sending {updatedOutgoingChunks} chunks ({BytesToString(outBytes.Length)})");
 
 		// Return table data for the player to download
-		return (outBytes, updatedWaypoints);
+		return (outgoingChunks, updatedChunks, updatedWaypoints);
 	}
 
 	public override void ToTreeAttributes(ITreeAttribute tree) {

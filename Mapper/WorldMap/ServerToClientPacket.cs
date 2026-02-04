@@ -9,6 +9,6 @@ public class ServerToClientPacket {
 	public Dictionary<FastVec2i, ColorAndZoom>? Changes;
 	public Vec3d? LastKnownPosition;
 	public bool RecoverMap;
-	public byte[]? SharedMapData;
+	public byte[]? Chunks;
 	public int DownloadedWaypoints;
 }

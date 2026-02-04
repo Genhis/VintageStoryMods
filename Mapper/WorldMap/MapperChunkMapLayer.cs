@@ -18,6 +18,7 @@ using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 using Vintagestory.API.Util;
 using Vintagestory.GameContent;
+using System.Linq;
 
 public class MapperChunkMapLayer : ChunkMapLayer {
 	private const int ClientAutosaveTime = 60 * 5;
@@ -107,32 +108,33 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return TextCommandResult.Error(Lang.Get($"mapper:commandresult-mapper-restore-{side}-error"));
 
 		if(this.api is ICoreClientAPI capi)
-			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket { PlayerUID = capi.World.Player.PlayerUID, RecoverMap = true }));
+			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = capi.World.Player.PlayerUID, RecoverMap = true}));
 		else
 			this.status = Status.Enabled;
 		return TextCommandResult.Success(Lang.Get($"mapper:commandresult-mapper-restore-{side}-success"));
 	}
 
-	public void SendSyncWithTableRequest(BlockPos tablePos) {
+	public void SendSyncWithTableRequest(BlockPos tablePosition) {
 		if(this.api is not ICoreClientAPI capi)
 			return;
 
-		byte[]? sharedMapData = null;
+		byte[]? chunks = null;
 		if(this.clientStorage != null) {
 			using MemoryStream stream = new();
 			using(VersionedWriter output = VersionedWriter.Create(stream, leaveOpen: true, compressed: true)) {
-				output.Write(this.clientStorage.Chunks);
+				// Chunks are not synchronised to the table before they are explored
+				output.Write(this.clientStorage.Chunks.Where(c => c.Value.ColorLevel > 0).ToDictionary());
 			}
-			sharedMapData = stream.ToArray();
+			chunks = stream.ToArray();
 		}
 		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket {
 			PlayerUID = capi.World.Player.PlayerUID,
-			SyncWithTablePos = tablePos,
-			ShareMapData = sharedMapData
+			TablePosition = tablePosition,
+			ExploredChunks = chunks
 		}));
 	}
 
-	private void ExecuteSyncWithTable(IServerPlayer player, BlockPos tablePos, byte[] playerMapData) {
+	private void ExecuteSyncWithTable(IServerPlayer player, BlockPos tablePos, byte[] playerChunkData) {
 		ICoreServerAPI sapi = (ICoreServerAPI)this.api;
 
 		BlockEntity? be = sapi.World.BlockAccessor.GetBlockEntity(tablePos);
@@ -146,27 +148,36 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		// Get player's current waypoints from the game
 		List<Waypoint> playerWaypoints = WaypointHelper.GetPlayerWaypoints(sapi, player.PlayerUID);
 
-		(byte[]? mapData, int uploadedWaypoints) = table.SynchronizeMap(playerMapData, serverPlayerMap, playerWaypoints, this.background!, ref this.dirty);
-		this.dirty = true;
+		// Load chunk data
+		Dictionary<FastVec2i, MapChunk> incomingChunks = [];
+		{
+			using MemoryStream inStream = new MemoryStream(playerChunkData, false);
+			using VersionedReader input = VersionedReader.Create(inStream, compressed: true);
+			input.ReadChunks(incomingChunks, null);
+		}
+
+		(Dictionary<FastVec2i, MapChunk> chunksToSend, int updatedChunks, int updatedWaypoints) = table.SynchronizeMap(serverPlayerMap, incomingChunks, playerWaypoints);
+
+		this.api.Logger.Notification($"[mapper] Cartographer's Table recieved {incomingChunks.Count} chunks ({BlockEntityCartographersTable.BytesToString(playerChunkData.Length)}) and updated {updatedChunks} internal chunks");
+
+		player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.GetL(player.LanguageCode, "mapper:commandresult-cartographers-table-uploaded", updatedChunks, updatedWaypoints), EnumChatType.Notification);
 
 		// Replace player's waypoints with all waypoints from the table
 		int downloadedWaypoints = WaypointHelper.ReplacePlayerWaypoints(sapi, player, table.Waypoints);
 
-		// Build upload message
-		if(mapData != null || uploadedWaypoints > 0) {
-			if(mapData != null && uploadedWaypoints > 0)
-				player.SendLocalisedMessage(0, Lang.Get("mapper:commandresult-cartographers-table-uploaded-both", uploadedWaypoints));
-			else if(mapData != null)
-				player.SendLocalisedMessage(0, Lang.Get("mapper:commandresult-cartographers-table-uploaded-map"));
-			else
-				player.SendLocalisedMessage(0, Lang.Get("mapper:commandresult-cartographers-table-uploaded-waypoints", uploadedWaypoints));
+		byte[] serializedChunks;
+		{
+			using MemoryStream stream = new();
+			using(VersionedWriter output = VersionedWriter.Create(stream, leaveOpen: true, compressed: true)) {
+				output.Write(chunksToSend);
+			}
+			serializedChunks = stream.ToArray();
 		}
-		else {
-			player.SendLocalisedMessage(0, Lang.Get("mapper:commandresult-cartographers-table-uploaded-nothing"));
-		}
+		int chunksToSendCount = chunksToSend.Count;
+		this.api.Logger.Notification($"[mapper] Cartographer's Table sending {chunksToSendCount} chunks ({BlockEntityCartographersTable.BytesToString(serializedChunks.Length)}) to client");
 
 		this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket {
-			SharedMapData = mapData,
+			Chunks = serializedChunks,
 			DownloadedWaypoints = downloadedWaypoints
 		}));
 	}
@@ -203,7 +214,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return false;
 
 		this.lastKnownPosition = position?.Clone();
-		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket { PlayerUID = ((ICoreClientAPI)this.api).World.Player.PlayerUID, LastKnownPosition = this.lastKnownPosition }));
+		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = ((ICoreClientAPI)this.api).World.Player.PlayerUID, LastKnownPosition = this.lastKnownPosition}));
 		return true;
 	}
 
@@ -226,11 +237,9 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		}
 
 		if(packet.RecoverMap)
-			this.mapSink.SendMapDataToClient(this, (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), SerializerUtil.Serialize(new ServerToClientPacket { Changes = this.serverStorage![packet.PlayerUID].PrepareClientRecovery(), RecoverMap = true }));
-		else if(packet.SyncWithTablePos != null && packet.ShareMapData != null) {
-			IServerPlayer player = (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID);
-			this.ExecuteSyncWithTable(player, packet.SyncWithTablePos, packet.ShareMapData);
-		}
+			this.mapSink.SendMapDataToClient(this, (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), SerializerUtil.Serialize(new ServerToClientPacket{Changes = this.serverStorage![packet.PlayerUID].PrepareClientRecovery(), RecoverMap = true}));
+		else if(packet.TablePosition != null && packet.ExploredChunks != null)
+			this.ExecuteSyncWithTable((IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), packet.TablePosition, packet.ExploredChunks);
 		else {
 			this.dirty = true;
 			this.serverStorage![packet.PlayerUID].LastKnownPosition = packet.LastKnownPosition;
@@ -248,52 +257,44 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(!this.Enabled)
 			return;
 
-		if(packet.LastKnownPosition != null) {
+		if(packet.Chunks != null) {
+			// Table only sends chunks that needs to be updated.
+			// We send chunks instead of updated pixels and changes to avoid
+			// sending positions twice and save data on transfer.
+			Dictionary<FastVec2i, MapChunk> incomingChunks = [];
+			{
+				using MemoryStream stream = new MemoryStream(packet.Chunks, false);
+				using VersionedReader input = VersionedReader.Create(stream, compressed: true);
+				// background == null, since we should not use our own background
+				input.ReadChunks(incomingChunks, null);
+			}
+			foreach((FastVec2i position, MapChunk chunk) in incomingChunks)
+				this.clientStorage!.Chunks[position] = chunk;
+
+			((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded", incomingChunks.Count, packet.DownloadedWaypoints));
+		}
+
+		if(packet.Changes == null) {
 			this.lastKnownPosition = packet.LastKnownPosition;
 			if(this.mapSink is WorldMapManager manager)
 				if(this.lastKnownPosition != null && manager.worldMapDlg?.DialogType == EnumDialogType.HUD)
 					manager.worldMapDlg.TryClose();
+			return;
 		}
 
-		if(packet.Changes != null)
-			lock(this.chunksToRedrawLock!)
-				this.UpdateChunks(packet.Changes);
-
-
-		if(packet.SharedMapData != null) {
-			int mergedCount = 0;
-			using VersionedReader input = VersionedReader.Create(new MemoryStream(packet.SharedMapData, false), compressed: true);
-			Dictionary<FastVec2i, MapChunk> chunks = [];
-			input.ReadChunks(chunks, this.background!);
-			mergedCount = BlockEntityCartographersTable.MergeChunks(this.clientStorage!.Chunks, chunks, this.clientStorage!.Chunks);
-			if(mergedCount > 0) {
-				this.dirty = true;
-			}
-
-			// Build upload message
-			if(mergedCount > 0 || packet.DownloadedWaypoints > 0) {
-				if(mergedCount > 0 && packet.DownloadedWaypoints > 0)
-					((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-both", packet.DownloadedWaypoints));
-				else if(mergedCount > 0)
-					((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-map"));
-				else
-					((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-waypoints", packet.DownloadedWaypoints));
-			}
-			else {
-				((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographers-table-downloaded-nothing"));
-			}
-		}
+		lock(this.chunksToRedrawLock!)
+			this.UpdateChunks(packet.Changes);
 	}
 
-	private void UpdateChunks(Dictionary<FastVec2i, ColorAndZoom> changes) {
+	private void UpdateChunks(Dictionary<FastVec2i, ColorAndZoom> changes, Dictionary<FastVec2i, MapChunk>? newChunks = null) {
 		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
 		using IDisposable guard = this.clientStorage!.SaveLock.SharedLock();
 		this.dirty = true;
 		foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in changes) {
 			if(!this.clientStorage!.Chunks.ContainsKey(item.Key) || item.Value.Color == 0) {
 				int[] pixels = this.background!.GetPixels(item.Key, item.Value.ZoomLevel);
-				this.clientStorage.Chunks[item.Key] = new MapChunk(pixels, item.Value.ZoomLevel, 0); // 0 = unexplored/background
-				readyMapPieces.Enqueue(new ReadyMapPiece { Cord = item.Key, Pixels = pixels });
+				this.clientStorage.Chunks[item.Key] = new MapChunk(pixels, item.Value.ZoomLevel, true);
+				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = item.Key, Pixels = pixels});
 			}
 			if(item.Value.Color > 0)
 				this.clientStorage.ChunksToRedraw.Enqueue(item);
@@ -368,8 +369,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 				MapperChunkMapLayer.ApplyBoxFilter(pixels, 1u << redrawRequest.Value.ZoomLevel);
 
 			this.dirty = true;
-			this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, redrawRequest.Value.ZoomLevel, redrawRequest.Value.Color);
-			readyMapPieces.Enqueue(new ReadyMapPiece { Cord = redrawRequest.Key, Pixels = pixels });
+			this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, redrawRequest.Value.ZoomLevel, false);
+			readyMapPieces.Enqueue(new ReadyMapPiece{Cord = redrawRequest.Key, Pixels = pixels});
 
 			if(this.OnChunkChanged.Count != 0)
 				lock(this.OnChunkChanged)
@@ -392,7 +393,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			}
 
 			if(this.clientStorage!.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk))
-				readyMapPieces.Enqueue(new ReadyMapPiece { Cord = chunkPosition, Pixels = mapChunk.Pixels });
+				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = chunkPosition, Pixels = mapChunk.Pixels});
 		}
 	}
 
