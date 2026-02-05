@@ -16,6 +16,8 @@ public class VersionedReader : BufferedReader {
 		Span<byte> versionBuffer = stackalloc byte[sizeof(uint)];
 		stream.ReadExactly(versionBuffer);
 		uint version = BinaryPrimitives.ReadUInt32LittleEndian(versionBuffer);
+		if(version > VersionedWriter.OutputVersion)
+			throw new InvalidDataException($"Input version {version} is newer than {VersionedWriter.OutputVersion}, please update the mod.");
 
 		if(compressed) {
 			stream = new DeflateStream(stream, CompressionMode.Decompress, leaveOpen);
