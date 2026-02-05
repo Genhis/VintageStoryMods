@@ -25,11 +25,11 @@ public class ClientMapStorage : IDisposable {
 		try {
 			using VersionedReader input = VersionedReader.Create(new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, SaveLoadExtensions.DefaultBufferSize, FileOptions.SequentialScan), compressed: true);
 			this.Load(input, background);
-			logger.Notification($"[mapper] Loaded {this.Chunks.Count} chunks out of which {this.ChunksToRedraw.Count} are waiting for refresh");
+			logger.Notification($"Loaded {this.Chunks.Count} chunks out of which {this.ChunksToRedraw.Count} are waiting for refresh");
 			return true;
 		}
 		catch(Exception ex) {
-			logger.Error("[mapper] Failed to load client map storage: " + ex.ToString());
+			logger.Error("Failed to load client map storage: " + ex.ToString());
 			this.Chunks.Clear();
 			this.ChunksToRedraw.Clear();
 			return false;
@@ -56,7 +56,7 @@ public class ClientMapStorage : IDisposable {
 			this.Save(output, ref dirtyFlag);
 		}
 		catch(Exception ex) {
-			logger.Error("[mapper] Failed to save client map storage: " + ex.ToString());
+			logger.Error("Failed to save client map storage: " + ex.ToString());
 		}
 	}
 

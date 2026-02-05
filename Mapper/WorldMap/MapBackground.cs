@@ -10,7 +10,7 @@ public class MapBackground {
 	private readonly int chunkCountX;
 	private readonly int chunkCountY;
 
-	public MapBackground(ICoreClientAPI api, AssetLocation assetLocation) {
+	public MapBackground(ICoreClientAPI api, ILogger logger, AssetLocation assetLocation) {
 		using BitmapRef bitmap = api.Assets.Get(assetLocation).ToBitmap(api);
 		int[] sourcePixels = bitmap.Pixels;
 		int sourceWidth = bitmap.Width;
@@ -48,7 +48,7 @@ public class MapBackground {
 				}
 			this.pixels[zoomLevel] = zoomLevelPixels;
 		}
-		api.Logger.Notification($"[mapper] Estimated RAM usage of map background is {estimatedMemoryUsage / 1024.0 / 1024.0} MB");
+		logger.Notification($"Estimated RAM usage of map background is {estimatedMemoryUsage / 1024.0 / 1024.0} MB");
 	}
 
 	public int[] GetPixels(FastVec2i chunkPosition, int zoomLevel) {

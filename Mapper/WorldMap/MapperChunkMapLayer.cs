@@ -36,6 +36,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	private float lastThreadUpdateTime;
 	private float clientAutosaveTimer;
 
+	private ILogger logger;
 	private bool dirty;
 	private enum Status { Enabled, DisabledMap, CorruptedData }
 	private Status status = Status.Enabled;
@@ -45,12 +46,13 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	public readonly Dictionary<object, Action<FastVec2i>> OnChunkChanged = [];
 
 	public MapperChunkMapLayer(ICoreAPI api, IWorldMapManager mapSink) : base(api, mapSink) {
+		this.logger = api.Logger;
 		if(api is ICoreServerAPI sapi) {
 			this.serverStorage = [];
 			this.joiningPlayers = [];
 
 			sapi.Event.GameWorldSave += () => {
-				if(this.dirty && this.serverStorage.Save((ICoreServerAPI)this.api))
+				if(this.dirty && this.serverStorage.Save((ICoreServerAPI)this.api, this.logger))
 					this.dirty = false;
 			};
 			sapi.Event.PlayerJoin += player => this.joiningPlayers.Add(player.PlayerUID);
@@ -71,25 +73,26 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(modSystem.mapLayer != null)
 			throw new InvalidOperationException("Another MapperChunkMapLayer instance is already loaded");
 		modSystem.mapLayer = this;
+		this.logger = modSystem.Mod.Logger;
 
 		if(!this.api.World.Config.GetBool("allowMap", true)) {
 			this.status = Status.DisabledMap;
-			this.api.Logger.Warning("[mapper] World map is disabled, run `/worldconfig allowMap true` to enable it and restart the server");
+			this.logger.Warning("World map is disabled, run `/worldconfig allowMap true` to enable it and restart the server");
 			return;
 		}
 
 		if(this.serverStorage != null)
-			this.status = this.serverStorage.Load((ICoreServerAPI)this.api) ? Status.Enabled : Status.CorruptedData;
+			this.status = this.serverStorage.Load((ICoreServerAPI)this.api, this.logger) ? Status.Enabled : Status.CorruptedData;
 		else {
-			this.background = new MapBackground((ICoreClientAPI)this.api, "mapper:textures/map.png");
-			this.status = this.clientStorage!.Load(this.clientStorageFilename!, this.api.Logger, this.background) ? Status.Enabled : Status.CorruptedData;
+			this.background = new MapBackground((ICoreClientAPI)this.api, this.logger, "mapper:textures/map.png");
+			this.status = this.clientStorage!.Load(this.clientStorageFilename!, this.logger, this.background) ? Status.Enabled : Status.CorruptedData;
 		}
 	}
 
 	public override void OnShutDown() {
 		if(this.clientStorage != null) {
 			if(this.dirty)
-				this.clientStorage.Save(this.clientStorageFilename!, this.api.Logger, ref this.dirty);
+				this.clientStorage.Save(this.clientStorageFilename!, this.logger, ref this.dirty);
 			this.clientStorage.Dispose();
 		}
 		this.api.ModLoader.GetModSystem<MapperModSystem>().mapLayer = null;
@@ -150,7 +153,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 		string uid = player.PlayerUID;
 		if(this.joiningPlayers.Remove(uid)) {
-			this.api.Logger.Notification($"[mapper] Sending last known position to player {uid}");
+			this.logger.Notification($"Sending last known position to player {uid}");
 			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{LastKnownPosition = this.serverStorage!.GetOrCreate(uid).LastKnownPosition}));
 		}
 	}
@@ -222,7 +225,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.clientAutosaveTimer += dt;
 			if(this.clientAutosaveTimer > MapperChunkMapLayer.ClientAutosaveTime) {
 				this.clientAutosaveTimer = 0;
-				this.clientStorage!.Save(this.clientStorageFilename!, this.api.Logger, ref this.dirty);
+				this.clientStorage!.Save(this.clientStorageFilename!, this.logger, ref this.dirty);
 			}
 		}
 

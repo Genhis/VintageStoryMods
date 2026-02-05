@@ -5,10 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Vintagestory.API.Common;
 using Vintagestory.API.Server;
 
 public class ServerMapStorage : Dictionary<string, ServerPlayerMap> {
-	public bool Load(ICoreServerAPI api) {
+	public bool Load(ICoreServerAPI api, ILogger logger) {
 		try {
 			byte[] data = api.WorldManager.SaveGame.GetData("mapper:mapregions");
 			if(data == null)
@@ -20,17 +21,17 @@ public class ServerMapStorage : Dictionary<string, ServerPlayerMap> {
 			for(int i = 0; i < count; ++i)
 				this[input.ReadString()] = new ServerPlayerMap(input);
 
-			api.Logger.Notification($"[mapper] Loaded {this.Count} players having {this.Sum(item => item.Value.Regions.Count)} map regions total");
+			logger.Notification($"Loaded {this.Count} players having {this.Sum(item => item.Value.Regions.Count)} map regions total");
 			return true;
 		}
 		catch(Exception ex) {
-			api.Logger.Error("[mapper] Failed to load map regions: " + ex.ToString());
+			logger.Error("Failed to load map regions: " + ex.ToString());
 			this.Clear();
 			return false;
 		}
 	}
 
-	public bool Save(ICoreServerAPI api) {
+	public bool Save(ICoreServerAPI api, ILogger logger) {
 		try {
 			using MemoryStream stream = new();
 			using(VersionedWriter output = VersionedWriter.Create(stream, leaveOpen: true)) {
@@ -44,7 +45,7 @@ public class ServerMapStorage : Dictionary<string, ServerPlayerMap> {
 			return true;
 		}
 		catch(Exception ex) {
-			api.Logger.Error("[mapper] Failed to save map regions:" + ex.ToString());
+			logger.Error("Failed to save map regions:" + ex.ToString());
 			return false;
 		}
 	}
