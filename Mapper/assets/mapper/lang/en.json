@@ -1,4 +1,5 @@
 {
+	"block-cartographytable-*": "Cartography table",
 	"commanddesc-mapper-restore": "Enables Mapper mod if it was disabled and overwrites old data.",
 	"commandresult-mapper-restore-client-error": "Mapper mod doesn't have any corrupted data on the client.",
 	"commandresult-mapper-restore-client-request-response": "Ok, Mapper mod enabled on the client.",

@@ -1,0 +1,50 @@
+{
+	"code": "cartographytable",
+	"class": "MapperCartographyTable",
+	"variantGroups": [
+		{"code": "material", "states": ["oak"]},
+		{"code": "side", "states": ["left", "right"]},
+		{"code": "orientation", "loadFromProperties": "game:abstract/horizontalorientation"}
+	],
+	"blockMaterial": "Wood",
+	"creativeInventory": {"general": ["*-left-north"], "decorative": ["*-left-north"]},
+	"drops": [{"type": "block", "code": "cartographytable-{material}-left-north"}],
+	"lightAbsorption": 0,
+	"materialDensity": 600,
+	"maxStackSize": 4,
+	"replaceable": 900,
+	"resistance": 3,
+	"sideOpaque": {"all": false},
+	"sideSolid": {"all": false, "up": true},
+	"shapeByType": {
+		"*-left-*": {
+			"base": "block/cartographytable",
+			"selectiveElements": ["LeftLegBase/*", "LeftTable/*"],
+			"rotateYByType": {"*-east": 270, "*-south": 180, "*-west": 90}
+		},
+		"*-right-*": {
+			"base": "block/cartographytable",
+			"selectiveElements": ["RightLegBase/*", "RightTable/*"],
+			"offsetXByType": {"*-north": -1, "*-south": 1},
+			"offsetZByType": {"*-east": -1, "*-west": 1},
+			"rotateYByType": {"*-east": 270, "*-south": 180, "*-west": 90}
+		}
+	},
+	"shapeInventory": {"base": "block/cartographytable", "offsetX": -0.5},
+	"sounds": {
+		"place": "game:block/planks",
+		"hit": "game:block/planks",
+		"break": "game:block/planks",
+		"walk": "game:walk/wood"
+	},
+	"heldTpIdleAnimation": "holdbothhandslarge",
+	"guiTransform": {
+		"rotation": {"x": -30, "y": -145, "z": 0},
+		"scaleXYZ": {"x": -0.7, "y": 0.7, "z": 0.7}
+	},
+	"tpHandTransform": {
+		"translation": {"x": -0.8, "y": -1.1, "z": -0.7},
+		"rotation": {"x": 100, "y": -5, "z": -80},
+		"scale": 0.5
+	}
+}
