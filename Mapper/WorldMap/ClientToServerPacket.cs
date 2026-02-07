@@ -8,4 +8,6 @@ public class ClientToServerPacket {
 	public required string PlayerUID;
 	public Vec3d? LastKnownPosition;
 	public bool RecoverMap;
+	public byte[]? ExploredChunks;
+	public BlockPos? TablePosition;
 }

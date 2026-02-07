@@ -1,6 +1,9 @@
 namespace Mapper.Util.IO;
 
+using Mapper.WorldMap;
+using System.Collections.Generic;
 using Vintagestory.API.MathTools;
+using Vintagestory.GameContent;
 
 public static class SaveLoadExtensions {
 	public const int DefaultBufferSize = 1024 * 64;
@@ -32,5 +35,52 @@ public static class SaveLoadExtensions {
 		output.Write(value != null);
 		if(value != null)
 			output.Write(value);
+	}
+
+	public static Waypoint ReadWaypoint(this VersionedReader input) {
+		return new Waypoint {
+			Guid = input.ReadString(),
+			Title = input.ReadString(),
+			Text = input.ReadString(),
+			Icon = input.ReadString(),
+			Color = input.ReadInt32(),
+			Position = input.ReadVec3d(),
+			Pinned = input.ReadBoolean(),
+			ShowInWorld = input.ReadBoolean(),
+			OwningPlayerUid = input.ReadString(),
+			OwningPlayerGroupId = input.ReadInt32(),
+			Temporary = input.ReadBoolean()
+		};
+	}
+
+	public static void Write(this VersionedWriter output, Waypoint waypoint) {
+		output.Write(waypoint.Guid ?? "");
+		output.Write(waypoint.Title ?? "");
+		output.Write(waypoint.Text ?? "");
+		output.Write(waypoint.Icon ?? "circle");
+		output.Write(waypoint.Color);
+		output.Write(waypoint.Position ?? new Vec3d());
+		output.Write(waypoint.Pinned);
+		output.Write(waypoint.ShowInWorld);
+		output.Write(waypoint.OwningPlayerUid ?? "");
+		output.Write(waypoint.OwningPlayerGroupId);
+		output.Write(waypoint.Temporary);
+	}
+
+
+	public static void ReadChunks(this VersionedReader input, Dictionary<FastVec2i, MapChunk> chunks, MapBackground? background) {
+		int count = input.ReadInt32();
+		for(int i = 0; i < count; ++i) {
+			FastVec2i pos = input.ReadFastVec2i();
+			chunks[pos] = new MapChunk(input, pos, background);
+		}
+	}
+
+	public static void Write(this VersionedWriter output, Dictionary<FastVec2i, MapChunk> chunks) {
+		output.Write(chunks.Count);
+		foreach((FastVec2i position, MapChunk chunk) in chunks) {
+			output.Write(position);
+			chunk.Save(output);
+		}
 	}
 }

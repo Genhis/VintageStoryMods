@@ -1,0 +1,99 @@
+{
+	"code": "cartographers-table",
+	"class": "MapperCartographersTable",
+	"entityClass": "MapperCartographersTable",
+	"creativeinventory": {
+		"general": [
+			"*"
+		],
+		"decorative": [
+			"*"
+		]
+	},
+	"blockmaterial": "Wood",
+	"drawtype": "json",
+	"shape": {
+		"base": "block/cartographers-table"
+	},
+	"textures": {
+		"tabletop-bottom": {
+			"base": "block/cartographers-table/tabletop-bot"
+		},
+		"tabletop-side1": {
+			"base": "block/cartographers-table/tabletop-side1"
+		},
+		"tabletop-side2": {
+			"base": "block/cartographers-table/tabletop-side2"
+		},
+		"tabletop-top": {
+			"base": "block/cartographers-table/tabletop-top"
+		},
+		"foot-hole": {
+			"base": "block/cartographers-table/foot-hole"
+		},
+		"foot-side": {
+			"base": "block/cartographers-table/foot-side"
+		},
+		"aged-treetrunk-side": {
+			"base": "block/cartographers-table/aged-treetrunk-side"
+		},
+		"aged-treetrunk-top": {
+			"base": "block/cartographers-table/aged-treetrunk-top"
+		}
+	},
+	"collisionboxes": [
+		{
+			"x1": -0.25,
+			"y1": 0,
+			"z1": -0.25,
+			"x2": 1.25,
+			"y2": 0.25,
+			"z2": 1.25
+		},
+		{
+			"x1": 0,
+			"y1": 0,
+			"z1": 0,
+			"x2": 1,
+			"y2": 1,
+			"z2": 1
+		},
+		{
+			"x1": -0.5,
+			"y1": 1,
+			"z1": -0.5,
+			"x2": 1.5,
+			"y2": 1.25,
+			"z2": 1.5
+		}
+	],
+	"selectionboxes": [
+		{
+			"x1": -0.5,
+			"y1": 1,
+			"z1": -0.5,
+			"x2": 1.5,
+			"y2": 1.25,
+			"z2": 1.5
+		}
+	],
+	"sidesolid": {
+		"all": false
+	},
+	"sideopaque": {
+		"all": false
+	},
+	"resistance": 3.0,
+	"sounds": {
+		"place": "game:block/planks",
+		"break": "game:block/planks",
+		"walk": "game:walk/wood"
+	},
+	"attributes": {
+		"handbook": {
+			"groupBy": [
+				"cartographers-table-*"
+			]
+		}
+	}
+}

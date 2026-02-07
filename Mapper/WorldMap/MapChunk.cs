@@ -12,15 +12,15 @@ public readonly struct MapChunk {
 	private readonly ColorAndZoom modeAndZoom;
 
 	public readonly byte ZoomLevel => this.modeAndZoom.ZoomLevel;
-
+	public readonly byte ColorLevel => this.modeAndZoom.Color;
 	public MapChunk(int[] pixels, byte zoomLevel, bool unexplored) {
 		this.Pixels = pixels;
 		this.modeAndZoom = new ColorAndZoom(unexplored ? (byte)0 : (byte)1, zoomLevel);
 	}
 
-	public MapChunk(VersionedReader input, FastVec2i chunkPosition, MapBackground background) {
+	public MapChunk(VersionedReader input, FastVec2i chunkPosition, MapBackground? background) {
 		this.modeAndZoom = new(input);
-		if(this.modeAndZoom.Color == 0) {
+		if(background != null && this.modeAndZoom.Color == 0) {
 			this.Pixels = background.GetPixels(chunkPosition, this.ZoomLevel);
 			return;
 		}
@@ -49,5 +49,12 @@ public readonly struct MapChunk {
 			for(int x = 0; x < MapChunk.Size; x += scaleFactor)
 				output.Write(this.Pixels[rowOffset + x]);
 		}
+	}
+
+	public static bool operator >(MapChunk l, MapChunk r) {
+		return l.modeAndZoom > r.modeAndZoom;
+	}
+	public static bool operator <(MapChunk l, MapChunk r) {
+		return r.modeAndZoom > l.modeAndZoom;
 	}
 }
