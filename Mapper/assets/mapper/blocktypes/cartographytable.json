@@ -1,6 +1,7 @@
 {
 	"code": "cartographytable",
 	"class": "MapperCartographyTable",
+	"entityClassByType": {"*-left-*": "MapperCartographyTable"},
 	"variantGroups": [
 		{"code": "material", "states": ["oak"]},
 		{"code": "side", "states": ["left", "right"]},

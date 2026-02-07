@@ -9,7 +9,7 @@ using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 
 public class ClientMapStorage {
-	public readonly Dictionary<FastVec2i, MapChunk> Chunks = [];
+	public readonly MapChunks Chunks = [];
 	public readonly DictionaryQueue<FastVec2i, ColorAndZoom> ChunksToRedraw = new();
 
 	/// <summary>
@@ -41,14 +41,9 @@ public class ClientMapStorage {
 	}
 
 	private void LoadInternal(VersionedReader input, MapBackground background) {
-		int count = input.ReadInt32();
-		this.Chunks.EnsureCapacity(Math.Min(count, SaveLoadExtensions.MaxInitialContainerSize));
-		for(int i = 0; i < count; ++i) {
-			FastVec2i chunkPosition = input.ReadFastVec2i();
-			this.Chunks[chunkPosition] = new MapChunk(input, chunkPosition, background);
-		}
+		this.Chunks.Load(input, background);
 
-		count = input.ReadInt32();
+		int count = input.ReadInt32();
 		this.ChunksToRedraw.EnsureCapacity(Math.Min(count, SaveLoadExtensions.MaxInitialContainerSize));
 		for(int i = 0; i < count; ++i)
 			this.ChunksToRedraw.Enqueue(new KeyValuePair<FastVec2i, ColorAndZoom>(input.ReadFastVec2i(), new ColorAndZoom(input)));
@@ -68,11 +63,7 @@ public class ClientMapStorage {
 	}
 
 	private void SaveInternal(VersionedWriter output) {
-		output.Write(this.Chunks.Count);
-		foreach(KeyValuePair<FastVec2i, MapChunk> item in this.Chunks) {
-			output.Write(item.Key);
-			item.Value.Save(output);
-		}
+		this.Chunks.Save(output);
 
 		output.Write(this.ChunksToRedraw.Count);
 		foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in this.ChunksToRedraw) {

@@ -32,4 +32,15 @@ public readonly struct ColorAndZoom {
 	public readonly void Save(VersionedWriter output) {
 		output.Write(this.Data);
 	}
+
+	/// <summary>
+	/// ColorAndZoom is less than or "worse" if:<br/>
+	/// 1. Zoom level is higher/resolution is lower<br/>
+	/// 2. Zoom level is the same but color level is lower<br/>
+	/// For example, higher resolution B/W maps replace lower resolution colored maps - an intentional design decision.
+	/// </summary>
+	public static bool operator <(ColorAndZoom l, ColorAndZoom r) {
+		return l.ZoomLevel > r.ZoomLevel || l.ZoomLevel == r.ZoomLevel && l.Color < r.Color;
+	}
+	public static bool operator >(ColorAndZoom l, ColorAndZoom r) => r < l;
 }

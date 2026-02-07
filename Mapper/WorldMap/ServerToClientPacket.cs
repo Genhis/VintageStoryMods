@@ -8,5 +8,6 @@ using Vintagestory.API.MathTools;
 public class ServerToClientPacket {
 	public Dictionary<FastVec2i, ColorAndZoom>? Changes;
 	public Vec3d? LastKnownPosition;
+	public bool ApplyPendingChanges;
 	public bool RecoverMap;
 }

@@ -3,6 +3,7 @@ namespace Mapper;
 using HarmonyLib;
 using Mapper.Behaviors;
 using Mapper.Blocks;
+using Mapper.Blocks.Entities;
 using Mapper.Items;
 using Mapper.Util.Harmony;
 using Mapper.Util.IO;
@@ -31,6 +32,7 @@ public class MapperModSystem : ModSystem {
 			this.Mod.Logger.Notification("Registering new classes");
 			api.ModLoader.GetModSystem<WorldMapManager>().RegisterMapLayer<MapperChunkMapLayer>("chunks", 0);
 			api.RegisterBlockClass("MapperCartographyTable", typeof(BlockCartographyTable));
+			api.RegisterBlockEntityClass("MapperCartographyTable", typeof(BlockEntityCartographyTable));
 			api.RegisterCollectibleBehaviorClass("MapperCompassNeedle", typeof(BehaviorCompassNeedle));
 			api.RegisterItemClass("MapperMap", typeof(ItemMap));
 			api.RegisterItemClass("MapperPaintbrush", typeof(ItemPaintbrush));
