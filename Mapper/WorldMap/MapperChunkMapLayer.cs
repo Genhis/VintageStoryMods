@@ -30,7 +30,6 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	// Client variables
 	private readonly ClientMapStorage? clientStorage;
 	private readonly string? clientStorageFilename;
-	private readonly object? chunksToRedrawLock;
 	private MapBackground? background;
 	private Vec3d? lastKnownPosition;
 	private float lastThreadUpdateTime;
@@ -60,7 +59,6 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		else {
 			this.clientStorage = new ClientMapStorage();
 			this.clientStorageFilename = MapperChunkMapLayer.GetClientStorageFilename(api);
-			this.chunksToRedrawLock = new();
 		}
 
 		this.api.ChatCommands.GetOrCreate("mapper").RequiresPrivilege(Privilege.root).BeginSubCommand("restore").WithDescription(Lang.Get("mapper:commanddesc-mapper-restore")).HandleWith(this.HandleRestoreCommand);
@@ -90,11 +88,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 	public override void OnShutDown() {
-		if(this.clientStorage != null) {
-			if(this.dirty)
-				this.clientStorage.Save(this.clientStorageFilename!, this.logger, ref this.dirty);
-			this.clientStorage.Dispose();
-		}
+		if(this.dirty)
+			this.clientStorage?.Save(this.clientStorageFilename!, this.logger, ref this.dirty);
 		this.api.ModLoader.GetModSystem<MapperModSystem>().mapLayer = null;
 		base.OnShutDown();
 	}
@@ -192,13 +187,12 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return;
 		}
 
-		lock(this.chunksToRedrawLock!)
+		lock(this.clientStorage!.SaveLock)
 			this.UpdateChunks(packet.Changes);
 	}
 
 	private void UpdateChunks(Dictionary<FastVec2i, ColorAndZoom> changes) {
 		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
-		using IDisposable guard = this.clientStorage!.SaveLock.SharedLock();
 		this.dirty = true;
 		foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in changes) {
 			if(!this.clientStorage!.Chunks.ContainsKey(item.Key) || item.Value.Color == 0) {
@@ -255,12 +249,13 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(count == 0)
 			return;
 
+		// I am locking and unlocking SaveLock repeatedly and using it only for necessary operations.
+		// The main thread should be able to acquire the lock and get priority over this one, I don't want to cause lag spikes.
 		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
 		IBlockAccessor blockAccessor = this.api.World.BlockAccessor;
-		using IDisposable guard = this.clientStorage.SaveLock.SharedLock();
 		for(; count > 0 && !this.mapSink.IsShuttingDown; --count) {
 			KeyValuePair<FastVec2i, ColorAndZoom> redrawRequest;
-			lock(this.chunksToRedrawLock!) {
+			lock(this.clientStorage.SaveLock) {
 				if(this.clientStorage.ChunksToRedraw.Count == 0)
 					break;
 				redrawRequest = this.clientStorage.ChunksToRedraw.Dequeue();
@@ -269,7 +264,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			IMapChunk? chunk = blockAccessor.GetMapChunk(redrawRequest.Key.X, redrawRequest.Key.Y);
 			int[]? pixels = chunk != null ? this.GenerateChunkImage(redrawRequest.Key, chunk, redrawRequest.Value.Color == 3) : null;
 			if(pixels == null) {
-				lock(this.chunksToRedrawLock)
+				lock(this.clientStorage.SaveLock)
 					this.clientStorage.ChunksToRedraw.Enqueue(redrawRequest);
 				continue;
 			}
@@ -278,8 +273,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			if(redrawRequest.Value.ZoomLevel > 0)
 				MapperChunkMapLayer.ApplyBoxFilter(pixels, 1u << redrawRequest.Value.ZoomLevel);
 
-			this.dirty = true;
-			this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, redrawRequest.Value.ZoomLevel, false);
+			lock(this.clientStorage.SaveLock) {
+				this.dirty = true;
+				this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, redrawRequest.Value.ZoomLevel, false);
+			}
 			readyMapPieces.Enqueue(new ReadyMapPiece{Cord = redrawRequest.Key, Pixels = pixels});
 
 			if(this.OnChunkChanged.Count != 0)

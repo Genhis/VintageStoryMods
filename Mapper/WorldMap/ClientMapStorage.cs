@@ -5,18 +5,19 @@ using Mapper.Util.IO;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 
-public class ClientMapStorage : IDisposable {
+public class ClientMapStorage {
 	public readonly Dictionary<FastVec2i, MapChunk> Chunks = [];
 	public readonly DictionaryQueue<FastVec2i, ColorAndZoom> ChunksToRedraw = new();
-	public readonly ReaderWriterLockSlim SaveLock = new();
 
-	public void Dispose() {
-		this.SaveLock.Dispose();
-	}
+	/// <summary>
+	/// Always use this lock when writing to client storage.<br/>
+	/// When reading, use it only if you care about data integrity as a whole, not for accessing individual chunks.<br/>
+	/// Also use it when you iterate over the stored objects.
+	/// </summary>
+	public readonly object SaveLock = new();
 
 	public bool Load(string filename, ILogger logger, MapBackground background) {
 		if(!File.Exists(filename))
@@ -24,19 +25,22 @@ public class ClientMapStorage : IDisposable {
 
 		try {
 			using VersionedReader input = VersionedReader.Create(new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, SaveLoadExtensions.DefaultBufferSize, FileOptions.SequentialScan), compressed: true);
-			this.Load(input, background);
+			lock(this.SaveLock)
+				this.LoadInternal(input, background);
 			logger.Notification($"Loaded {this.Chunks.Count} chunks out of which {this.ChunksToRedraw.Count} are waiting for refresh");
 			return true;
 		}
 		catch(Exception ex) {
 			logger.Error("Failed to load client map storage: " + ex.ToString());
-			this.Chunks.Clear();
-			this.ChunksToRedraw.Clear();
+			lock(this.SaveLock) {
+				this.Chunks.Clear();
+				this.ChunksToRedraw.Clear();
+			}
 			return false;
 		}
 	}
 
-	public void Load(VersionedReader input, MapBackground background) {
+	private void LoadInternal(VersionedReader input, MapBackground background) {
 		int count = input.ReadInt32();
 		this.Chunks.EnsureCapacity(Math.Min(count, SaveLoadExtensions.MaxInitialContainerSize));
 		for(int i = 0; i < count; ++i) {
@@ -53,15 +57,17 @@ public class ClientMapStorage : IDisposable {
 	public void Save(string filename, ILogger logger, ref bool dirtyFlag) {
 		try {
 			using VersionedWriter output = VersionedWriter.Create(new FileStream(filename, FileMode.Create, FileAccess.Write, FileShare.None, SaveLoadExtensions.DefaultBufferSize), compressed: true);
-			this.Save(output, ref dirtyFlag);
+			lock(this.SaveLock) {
+				this.SaveInternal(output);
+				dirtyFlag = false;
+			}
 		}
 		catch(Exception ex) {
 			logger.Error("Failed to save client map storage: " + ex.ToString());
 		}
 	}
 
-	public void Save(VersionedWriter output, ref bool dirtyFlag) {
-		using IDisposable guard = this.SaveLock.ExclusiveLock();
+	private void SaveInternal(VersionedWriter output) {
 		output.Write(this.Chunks.Count);
 		foreach(KeyValuePair<FastVec2i, MapChunk> item in this.Chunks) {
 			output.Write(item.Key);
@@ -73,6 +79,5 @@ public class ClientMapStorage : IDisposable {
 			output.Write(item.Key);
 			item.Value.Save(output);
 		}
-		dirtyFlag = false;
 	}
 }
