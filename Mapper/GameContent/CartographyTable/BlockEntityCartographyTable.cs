@@ -1,4 +1,4 @@
-namespace Mapper.Blocks.Entities;
+namespace Mapper.GameContent;
 
 using Mapper.Util.IO;
 using Mapper.WorldMap;

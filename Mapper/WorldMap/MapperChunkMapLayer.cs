@@ -1,7 +1,6 @@
 namespace Mapper.WorldMap;
 
-using Mapper.Behaviors;
-using Mapper.Blocks.Entities;
+using Mapper.GameContent;
 using Mapper.Util;
 using Mapper.Util.Reflection;
 using System;

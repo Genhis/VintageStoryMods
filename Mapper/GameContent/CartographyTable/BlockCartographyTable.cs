@@ -1,6 +1,5 @@
-namespace Mapper.Blocks;
+namespace Mapper.GameContent;
 
-using Mapper.Blocks.Entities;
 using Mapper.WorldMap;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;

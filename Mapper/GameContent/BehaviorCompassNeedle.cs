@@ -1,4 +1,4 @@
-namespace Mapper.Behaviors;
+namespace Mapper.GameContent;
 
 using Newtonsoft.Json.Linq;
 using System;

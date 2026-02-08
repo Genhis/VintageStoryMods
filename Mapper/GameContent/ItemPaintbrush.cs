@@ -1,4 +1,4 @@
-namespace Mapper.Items;
+namespace Mapper.GameContent;
 
 using Mapper.Util;
 using Mapper.WorldMap;

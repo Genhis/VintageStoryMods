@@ -1,10 +1,7 @@
 namespace Mapper;
 
 using HarmonyLib;
-using Mapper.Behaviors;
-using Mapper.Blocks;
-using Mapper.Blocks.Entities;
-using Mapper.Items;
+using Mapper.GameContent;
 using Mapper.Util.Harmony;
 using Mapper.Util.IO;
 using Mapper.Util.Reflection;
