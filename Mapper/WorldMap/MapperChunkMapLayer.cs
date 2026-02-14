@@ -31,7 +31,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	private readonly ClientMapStorage? clientStorage;
 	private readonly string? clientStorageFilename;
 	private MapBackground? background;
-	private MapChunks? pendingChanges;
+	private CartographyTableSyncRequest? syncRequest;
 	private Vec3d? lastKnownPosition;
 	private float lastThreadUpdateTime;
 	private float clientAutosaveTimer;
@@ -163,8 +163,11 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 		if(packet.RecoverMap)
 			this.mapSink.SendMapDataToClient(this, (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), SerializerUtil.Serialize(new ServerToClientPacket{Changes = this.serverStorage![packet.PlayerUID].PrepareClientRecovery(), RecoverMap = true}));
-		else if(packet.CartographyTableData != null)
-			this.ProcessCartographyTableSynchronizationRequestServer((IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), packet.CartographyTableData);
+		else if(packet.CartographyTableData != null) {
+			IServerPlayer player = (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID);
+			if(!this.ProcessCartographyTableSynchronizationRequestServer(player, packet.CartographyTableData) && packet.CartographyTableData.RequestedChunks != null)
+				this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{ApplyPendingChanges = true}));
+		}
 		else {
 			this.dirty = true;
 			this.serverStorage![packet.PlayerUID].LastKnownPosition = packet.LastKnownPosition;
@@ -216,6 +219,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		base.OnTick(dt);
 		if(this.lastKnownPosition != null)
 			this.CheckLastKnownPosition();
+		if(this.syncRequest?.PreparedPacket != null)
+			this.SendCartographyTableSyncRequest();
 	}
 
 	public override void OnOffThreadTick(float dt) {
@@ -229,6 +234,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 				this.clientStorage!.Save(this.clientStorageFilename!, this.logger, ref this.dirty);
 			}
 		}
+		if(this.syncRequest != null && !this.syncRequest.Prepared && !this.PrepareCartographyTableSyncRequest())
+			this.syncRequest = null;
 
 		this.lastThreadUpdateTime += dt;
 		if(this.lastThreadUpdateTime < 0.1)
@@ -367,14 +374,20 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.GetL(player.LanguageCode, "mapper:error-unexplored-map"), EnumChatType.Notification);
 	}
 
-	public void RequestCartographyTableSynchronization(BlockEntityCartographyTable cartographyTable) {
+#region CartographyTableSynchronization
+	public void ScheduleCartographyTableSynchronization(BlockPos position) {
 		if(!this.CheckEnabledClient())
 			return;
 
-		if(this.pendingChanges != null) {
+		if(this.syncRequest == null)
+			this.syncRequest = new CartographyTableSyncRequest(position);
+		else
 			((ICoreClientAPI)this.api).TriggerIngameError(this, "mapper-cartographytable-sync-pending", Lang.Get("mapper:error-cartographytable-sync-pending"));
-			return;
-		}
+	}
+
+	private bool PrepareCartographyTableSyncRequest() {
+		if(this.api.World.BlockAccessor.GetBlockEntity(this.syncRequest!.Position) is not BlockEntityCartographyTable cartographyTable)
+			return false;
 
 		int blockUpdateID = cartographyTable.lastUpdateID;
 		MapChunks newTableChunks, newClientChunks;
@@ -383,7 +396,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			newClientChunks = this.clientStorage.Chunks.FindBetter(cartographyTable.Chunks);
 		}
 		if(newTableChunks.Count == 0 && newClientChunks.Count == 0)
-			return;
+			return false;
 
 		Dictionary<FastVec2i, ColorAndZoom>? requestedChunks = null;
 		if(newClientChunks.Count != 0) {
@@ -393,36 +406,48 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 				requestedChunks[item.Key] = item.Value.ColorAndZoom;
 		}
 
-		IClientPlayer player = ((ICoreClientAPI)this.api).World.Player;
+		this.syncRequest.Prepared = true;
+		this.syncRequest.UploadedChunkCount = newTableChunks.Count;
+		if(newClientChunks.Count != 0)
+			this.syncRequest.PendingChanges = newClientChunks;
+
 		try {
-			this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{
-				PlayerUID = player.PlayerUID,
-				CartographyTableData = new() {
-					Position = cartographyTable.Pos,
-					UploadedChunks = newTableChunks.ToBytes(),
-					RequestedChunks = requestedChunks,
-					BlockUpdateID = blockUpdateID,
-				}
-			}));
-			if(newClientChunks.Count != 0)
-				this.pendingChanges = newClientChunks;
-			if(newTableChunks.Count != 0)
-				player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-upload", newTableChunks.Count));
+			// This function runs on the background thread because it could process a lot of data.
+			// I don't know if `IWorldMapManager.SendMapDataToServer()` is thread-safe, so let's assume it isn't and have main thread send the packet.
+			this.syncRequest.PreparedPacket = new ClientCartographyTableData{
+				Position = this.syncRequest.Position,
+				BlockUpdateID = blockUpdateID,
+				UploadedChunks = newTableChunks.ToBytes(),
+				RequestedChunks = requestedChunks,
+			};
 		}
 		catch(Exception ex) {
 			this.logger.Error("Failed to save new chunks for synchronization with the server:\n" + ex.ToString());
+			return false;
 		}
+		return true;
 	}
 
-	private void ProcessCartographyTableSynchronizationRequestServer(IServerPlayer player, ClientCartographyTableData cartographyData) {
+	private void SendCartographyTableSyncRequest() {
+		IClientPlayer player = ((ICoreClientAPI)this.api).World.Player;
+		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = player.PlayerUID, CartographyTableData = this.syncRequest!.PreparedPacket}));
+		if(this.syncRequest.UploadedChunkCount != 0)
+			player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-upload", this.syncRequest.UploadedChunkCount));
+
+		this.syncRequest.PreparedPacket = null;
+		if(this.syncRequest.PendingChanges == null)
+			this.syncRequest = null;
+	}
+
+	private bool ProcessCartographyTableSynchronizationRequestServer(IServerPlayer player, ClientCartographyTableData cartographyData) {
 		if(this.api.World.BlockAccessor.GetBlockEntity(cartographyData.Position) is not BlockEntityCartographyTable cartographyTable) {
 			this.logger.Warning($"Cannot process a synchronization packet from {player.PlayerUID} for a cartography table at {cartographyData.Position} because the block entity doesn't exist");
-			return;
+			return false;
 		}
 
 		if(cartographyTable.lastUpdateID != cartographyData.BlockUpdateID) {
 			player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.GetL(player.LanguageCode, "mapper:error-cartographytable-outdated"), EnumChatType.Notification);
-			return;
+			return false;
 		}
 
 		MapChunks uploadedChunks = [];
@@ -432,7 +457,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			}
 			catch(Exception ex) {
 				this.logger.Error($"An error occured when processing a synchronization packet from {player.PlayerUID} for a cartography table at {cartographyData.Position}:\n{ex}");
-				return;
+				return false;
 			}
 
 		if(uploadedChunks.Count != 0) {
@@ -449,21 +474,23 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in cartographyData.RequestedChunks)
 				storedRegions.GetOrCreate(RegionPosition.FromChunkPosition(item.Key)).SetColorAndZoomLevels(item.Key, item.Value.Color, item.Value.ZoomLevel, true);
 		this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{ApplyPendingChanges = true}));
+		return true;
 	}
 
 	private void ProcessCartographyTableSynchronizationRequestClient() {
-		if(this.pendingChanges == null)
+		if(this.syncRequest == null)
 			return;
 
 		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
 		lock(this.clientStorage!.SaveLock)
-			foreach(KeyValuePair<FastVec2i, MapChunk> item in this.pendingChanges) {
+			foreach(KeyValuePair<FastVec2i, MapChunk> item in this.syncRequest.PendingChanges!) {
 				this.clientStorage.Chunks[item.Key] = item.Value;
 				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = item.Key, Pixels = item.Value.Pixels});
 			};
-		((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-download", this.pendingChanges.Count));
-		this.pendingChanges = null;
+		((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-download", this.syncRequest.PendingChanges.Count));
+		this.syncRequest = null;
 	}
+#endregion
 
 	internal static MapperChunkMapLayer GetInstance(ICoreAPI api) {
 		return api.ModLoader.GetModSystem<MapperModSystem>().mapLayer!;

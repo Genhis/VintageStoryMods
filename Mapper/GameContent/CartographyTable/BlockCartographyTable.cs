@@ -41,7 +41,7 @@ public class BlockCartographyTable : Block {
 			return false;
 
 		if(this.api.Side == EnumAppSide.Client)
-			MapperChunkMapLayer.GetInstance(this.api).RequestCartographyTableSynchronization(blockEntity);
+			MapperChunkMapLayer.GetInstance(this.api).ScheduleCartographyTableSynchronization(blockEntityPosition);
 		return true;
 	}
 

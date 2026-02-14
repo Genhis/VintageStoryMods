@@ -15,7 +15,7 @@ public class ClientToServerPacket {
 [ProtoContract(ImplicitFields = ImplicitFields.AllPublic)]
 public class ClientCartographyTableData {
 	public required BlockPos Position;
+	public required int BlockUpdateID;
 	public byte[]? UploadedChunks; // MapChunks serialized using VersionedWriter. Sent as raw bytes because our binary serialization has better compression than ProtoBuf.
 	public Dictionary<FastVec2i, ColorAndZoom>? RequestedChunks;
-	public int BlockUpdateID;
 }
