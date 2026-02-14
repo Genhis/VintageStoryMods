@@ -15,10 +15,10 @@ public static class VintageStoryExtensions {
 		return obj.Attributes?["mapper"] ?? new JsonObject(null);
 	}
 
-	public static int GetIntInRange(this JsonObject input, ILogger logger, string key, int defaultValue, int from, int to) {
+	public static int GetIntInRange(this JsonObject input, ILogger? logger, string key, int defaultValue, int from, int to) {
 		int value = input[key].AsInt(defaultValue);
 		if(value < from ||  value > to) {
-			logger.Warning($"Value {key} is out of allowed range ({from} to {to}), clamping it");
+			logger?.Warning($"Value {key} is out of allowed range ({from} to {to}), clamping it");
 			value = Math.Clamp(value, from, to);
 		}
 		return value;
@@ -39,6 +39,12 @@ public static class VintageStoryExtensions {
 			ctx.MoveTo(x + (width - extents.Width) / 2 - extents.XBearing, y + (height - extents.Height) / 2 - extents.YBearing);
 			ctx.ShowText(text);
 		}));
+	}
+
+	public static ItemStack TakeOutAndMarkDirty(this ItemSlot slot, int quantity) {
+		ItemStack result = slot.TakeOut(quantity);
+		slot.MarkDirty();
+		return result;
 	}
 
 	public static FastVec2i ToChunkPosition(this EntityPos entityPos) {

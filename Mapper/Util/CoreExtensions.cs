@@ -7,7 +7,7 @@ public static class CoreExtensions {
 		return dictionary.TryGetValue(key, out V? value) ? value : (dictionary[key] = new V());
 	}
 
-	public static void Resize<T>(this List<T?> list, int size) {
+	public static void ResizeIfSmaller<T>(this List<T?> list, int size) {
 		if(list.Count >= size)
 			return;
 

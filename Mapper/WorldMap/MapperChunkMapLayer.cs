@@ -135,7 +135,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 				continue;
 
 			changes[pos] = new ColorAndZoom(colorLevel, newZoomLevel.Value);
-			durability -= MapChunk.Area >> (newZoomLevel.Value * 2);
+			durability -= MapChunk.GetRequiredDurability(newZoomLevel.Value);
 			if(durability <= 0)
 				break;
 		}

@@ -27,7 +27,7 @@ public class ItemPaintbrush : Item {
 		JsonObject input = this.GetMapperAttributes();
 		ILogger logger = api.Logger;
 		this.interactionData.OnLoaded(this, input["interactionData"]);
-		this.colorLevel = (byte)input.GetIntInRange(logger, "colorLevel", 0, 0, 3);
+		this.colorLevel = ItemPaintset.GetColorLevel(input, logger);
 		this.hasUpgradeMode = input["upgradeMode"].AsBool(true);
 		this.minRange = input.GetIntInRange(logger, "minRange", 0, 0, 20);
 		int maxRange = input.GetIntInRange(logger, "maxRange", this.minRange, this.minRange, 99);
@@ -40,7 +40,7 @@ public class ItemPaintbrush : Item {
 
 		this.toolModes = new SkillItem[this.toolModeCount];
 		List<SkillItem?> toolModes = ObjectCacheUtil.GetOrCreate(api, "mapper:paintbrushToolModes", () => new List<SkillItem?>());
-		toolModes.Resize((maxRange + 1) * 2);
+		toolModes.ResizeIfSmaller((maxRange + 1) * 2);
 		int refreshModeOffset = (this.hasUpgradeMode ? this.rangeCount : 0) - this.minRange;
 		for(int i = this.minRange; i <= maxRange; i += this.stepRange) {
 			int affectedCount = (i * 2 + 1) * (i * 2 + 1);
@@ -89,12 +89,10 @@ public class ItemPaintbrush : Item {
 			return;
 
 		ItemStack paintsetStack = slotAndColor.Slot.Itemstack;
-		int oldDurability = paintsetStack.Collectible.GetRemainingDurability(paintsetStack);
+		int oldAvailablePixels = ItemPaintset.GetAvailablePixels(paintsetStack);
 		int mode = this.GetToolMode(slot, player, blockSel);
-		int newDurability = MapperChunkMapLayer.GetInstance(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), mode % this.rangeCount * this.stepRange + this.minRange, oldDurability * MapChunk.Area + paintsetStack.Attributes.GetInt("fractionalDurability"), slotAndColor.ColorLevel, ColorAndZoom.EmptyZoomLevel, !this.hasUpgradeMode || mode >= this.rangeCount);
-
-		paintsetStack.Attributes.SetInt("fractionalDurability", newDurability % MapChunk.Area);
-		paintsetStack.Collectible.DamageItem(byEntity.World, byEntity, slotAndColor.Slot, oldDurability - newDurability / MapChunk.Area);
+		int newAvailablePixels = MapperChunkMapLayer.GetInstance(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), mode % this.rangeCount * this.stepRange + this.minRange, oldAvailablePixels, slotAndColor.ColorLevel, ColorAndZoom.EmptyZoomLevel, !this.hasUpgradeMode || mode >= this.rangeCount);
+		ItemPaintset.DamageItem(byEntity.World, byEntity, slotAndColor.Slot, oldAvailablePixels, newAvailablePixels);
 	}
 
 	public override void SetToolMode(ItemSlot slot, IPlayer player, BlockSelection selection, int toolMode) {
@@ -128,9 +126,22 @@ public class ItemPaintbrush : Item {
 			return new ItemSlotAndColorLevel(slot, this.colorLevel);
 
 		slot = entity.LeftHandItemSlot;
-		byte colorLevel = (byte)(slot.Itemstack?.ItemAttributes?["mapper"]["colorLevel"].AsInt(0) ?? 0);
+		byte colorLevel = ItemPaintset.GetColorLevel(slot.Itemstack);
 		if(colorLevel > 0)
 			return new ItemSlotAndColorLevel(slot, colorLevel);
 		return new ItemSlotAndColorLevel(null, 0);
 	}
+}
+
+public static class ItemPaintset {
+	public static void DamageItem(IWorldAccessor world, EntityAgent? byEntity, ItemSlot slot, int oldAvailablePixels, int newAvailablePixels) {
+		int realDamage = (oldAvailablePixels - newAvailablePixels) / MapChunk.Area;
+		slot.Itemstack.Attributes.SetInt("fractionalDurability", newAvailablePixels % MapChunk.Area);
+		if(realDamage > 0)
+			slot.Itemstack.Collectible.DamageItem(world, byEntity, slot, realDamage);
+	}
+
+	public static int GetAvailablePixels(ItemStack? stack) => stack == null ? 0 : stack.Collectible.GetRemainingDurability(stack) * MapChunk.Area + stack.Attributes.GetInt("fractionalDurability");
+	public static byte GetColorLevel(ItemStack? stack) => stack == null ? (byte)0 : ItemPaintset.GetColorLevel(stack.Collectible.GetMapperAttributes(), null);
+	public static byte GetColorLevel(JsonObject mapperAttributes, ILogger? logger) => (byte)mapperAttributes.GetIntInRange(logger, "colorLevel", 0, 0, 3);
 }
