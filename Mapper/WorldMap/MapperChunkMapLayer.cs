@@ -375,12 +375,9 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 #region CartographyTableSynchronization
-	public void ScheduleCartographyTableSynchronization(BlockPos position) {
-		if(!this.CheckEnabledClient())
-			return;
-
+	public void ScheduleCartographyTableSynchronization(BlockPos position, TransferDirection transferDirection) {
 		if(this.syncRequest == null)
-			this.syncRequest = new CartographyTableSyncRequest(position);
+			this.syncRequest = new CartographyTableSyncRequest(position, transferDirection);
 		else
 			((ICoreClientAPI)this.api).TriggerIngameError(this, "mapper-cartographytable-sync-pending", Lang.Get("mapper:error-cartographytable-sync-pending"));
 	}
@@ -389,27 +386,22 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(this.api.World.BlockAccessor.GetBlockEntity(this.syncRequest!.Position) is not BlockEntityCartographyTable cartographyTable)
 			return false;
 
+		bool isDownload = this.syncRequest.TransferDirection == TransferDirection.Download;
 		int blockUpdateID = cartographyTable.lastUpdateID;
-		MapChunks newTableChunks, newClientChunks;
+		MapChunks newChunks;
 		lock(this.clientStorage!.SaveLock) {
-			newTableChunks = cartographyTable.Chunks.FindBetter(this.clientStorage.Chunks);
-			newClientChunks = this.clientStorage.Chunks.FindBetter(cartographyTable.Chunks);
+			newChunks = isDownload ? this.clientStorage.Chunks.FindBetter(cartographyTable.Chunks) : cartographyTable.Chunks.FindBetter(this.clientStorage.Chunks);
 		}
-		if(newTableChunks.Count == 0 && newClientChunks.Count == 0)
+		if(newChunks.Count == 0)
 			return false;
 
-		Dictionary<FastVec2i, ColorAndZoom>? requestedChunks = null;
-		if(newClientChunks.Count != 0) {
-			requestedChunks = [];
-			requestedChunks.EnsureCapacity(newClientChunks.Count);
-			foreach(KeyValuePair<FastVec2i, MapChunk> item in newClientChunks)
-				requestedChunks[item.Key] = item.Value.ColorAndZoom;
-		}
+		Dictionary<FastVec2i, ColorAndZoom>? requestedChunks = isDownload ? newChunks.ConvertToServerFormat() : null;
 
 		this.syncRequest.Prepared = true;
-		this.syncRequest.UploadedChunkCount = newTableChunks.Count;
-		if(newClientChunks.Count != 0)
-			this.syncRequest.PendingChanges = newClientChunks;
+		if(isDownload)
+			this.syncRequest.PendingChanges = newChunks;
+		else
+			this.syncRequest.UploadedChunkCount = newChunks.Count;
 
 		try {
 			// This function runs on the background thread because it could process a lot of data.
@@ -417,7 +409,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.syncRequest.PreparedPacket = new ClientCartographyTableData{
 				Position = this.syncRequest.Position,
 				BlockUpdateID = blockUpdateID,
-				UploadedChunks = newTableChunks.ToBytes(),
+				UploadedChunks = isDownload ? null : newChunks.ToBytes(),
 				RequestedChunks = requestedChunks,
 			};
 		}

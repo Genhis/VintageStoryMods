@@ -48,4 +48,12 @@ public class MapChunks : Dictionary<FastVec2i, MapChunk> {
 				result[item.Key] = item.Value;
 		return result;
 	}
+
+	public Dictionary<FastVec2i, ColorAndZoom> ConvertToServerFormat() {
+		Dictionary<FastVec2i, ColorAndZoom> result = [];
+		result.EnsureCapacity(this.Count);
+		foreach(KeyValuePair<FastVec2i, MapChunk> item in this)
+			result[item.Key] = item.Value.ColorAndZoom;
+		return result;
+	}
 }

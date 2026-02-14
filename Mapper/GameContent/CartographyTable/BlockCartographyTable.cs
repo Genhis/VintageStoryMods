@@ -1,10 +1,7 @@
 namespace Mapper.GameContent;
 
-using Mapper.WorldMap;
-using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
-using Vintagestory.API.Util;
 
 public class BlockCartographyTable : Block {
 	public override bool TryPlaceBlock(IWorldAccessor world, IPlayer player, ItemStack stack, BlockSelection selection, ref string failureCode) {
@@ -41,7 +38,7 @@ public class BlockCartographyTable : Block {
 			return false;
 
 		if(this.api.Side == EnumAppSide.Client)
-			MapperChunkMapLayer.GetInstance(this.api).ScheduleCartographyTableSynchronization(blockEntityPosition);
+			blockEntity.OpenGui();
 		return true;
 	}
 
@@ -65,11 +62,5 @@ public class BlockCartographyTable : Block {
 	public override AssetLocation GetRotatedBlockCode(int angle) {
 		int rotatedIndex = GameMath.Mod(BlockFacing.FromCode(this.LastCodePart()).HorizontalAngleIndex - angle / 90, 4);
 		return this.CodeWithParts(BlockFacing.HORIZONTALS_ANGLEORDER[rotatedIndex].Code);
-	}
-
-	public override WorldInteraction[] GetPlacedBlockInteractionHelp(IWorldAccessor world, BlockSelection selection, IPlayer player) {
-		return new WorldInteraction[] {
-			new() {ActionLangCode = "mapper:blockhelp-cartographytable-sync", MouseButton = EnumMouseButton.Right},
-		}.Append(base.GetPlacedBlockInteractionHelp(world, selection, player));
 	}
 }
