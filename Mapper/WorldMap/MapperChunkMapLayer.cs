@@ -63,6 +63,19 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		}
 
 		this.api.ChatCommands.GetOrCreate("mapper").RequiresPrivilege(Privilege.root).BeginSubCommand("restore").WithDescription(Lang.Get("mapper:commanddesc-mapper-restore")).HandleWith(this.HandleRestoreCommand);
+
+#if DEBUG
+		this.api.ChatCommands.GetOrCreate("mapper").BeginSubCommand("clear").HandleWith(args => {
+			if(this.clientStorage != null)
+				lock(this.clientStorage.SaveLock) {
+					this.clientStorage.Chunks.Clear();
+					this.clientStorage.ChunksToRedraw.Clear();
+				}
+			else if(args.Caller.Player != null)
+				this.serverStorage![args.Caller.Player.PlayerUID].Regions.Clear();
+			return TextCommandResult.Success("Done!");
+		});
+#endif
 	}
 
 	public override void OnLoaded() {
