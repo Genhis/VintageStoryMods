@@ -3,6 +3,7 @@
 	"blockdesc-cartographytable": "A workstation for sharing map data. Interact to synchronize your discoveries.",
 	"commanddesc-mapper-restore": "Enables Mapper mod if it was disabled and overwrites old data.",
 	"commandresult-cartographytable-download": "Received {0} chunks from the Cartography table.",
+	"commandresult-cartographytable-ignored": "{0} chunks were ignored due to having different properties than the map or the drawing kit can support.",
 	"commandresult-cartographytable-upload": "Sent {0} chunks to the Cartography table.",
 	"commandresult-mapper-restore-client-error": "Mapper mod doesn't have any corrupted data on the client.",
 	"commandresult-mapper-restore-client-request-response": "Ok, Mapper mod enabled on the client.",

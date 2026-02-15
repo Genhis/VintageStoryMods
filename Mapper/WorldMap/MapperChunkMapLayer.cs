@@ -199,7 +199,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return;
 
 		if(packet.ApplyPendingChanges) {
-			this.ProcessCartographyTableSynchronizationRequestClient();
+			this.ProcessCartographyTableSynchronizationRequestClient(packet.Chunks ?? []);
 			return;
 		}
 		if(packet.Changes == null) {
@@ -402,15 +402,41 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		bool isDownload = this.syncRequest.TransferDirection == TransferDirection.Download;
 		int blockUpdateID = cartographyTable.lastUpdateID;
 		MapChunks newChunks;
+		Dictionary<FastVec2i, byte>? currentZoomLevels = null;
 		lock(this.clientStorage!.SaveLock) {
 			newChunks = isDownload ? this.clientStorage.Chunks.FindBetter(cartographyTable.Chunks) : cartographyTable.Chunks.FindBetter(this.clientStorage.Chunks);
+			if(isDownload) {
+				currentZoomLevels = [];
+				foreach(KeyValuePair<FastVec2i, MapChunk> item in newChunks)
+					if(this.clientStorage.Chunks.TryGetValue(item.Key, out MapChunk mapChunk))
+						currentZoomLevels[item.Key] = mapChunk.ColorAndZoom.ZoomLevel;
+			}
 		}
-		if(newChunks.Count == 0)
-			return false;
 
-		Dictionary<FastVec2i, ColorAndZoom>? requestedChunks = isDownload ? newChunks.ConvertToServerFormat() : null;
+		Dictionary<FastVec2i, ColorAndZoom>? requestedChunks = null;
+		int ignoredChunkCount = 0;
+		if(isDownload) {
+			requestedChunks = [];
+			cartographyTable.ProcessChunks(
+				newChunks.ConvertToServerFormat(),
+				chunkPosition => currentZoomLevels!.GetValueOrDefault(chunkPosition, ColorAndZoom.EmptyZoomLevel),
+				(chunkPosition, colorAndZoom) => requestedChunks[chunkPosition] = colorAndZoom,
+				chunkPosition => {
+					newChunks.Remove(chunkPosition);
+					++ignoredChunkCount;
+				}
+			);
+		}
+		if(newChunks.Count == 0) {
+			if(ignoredChunkCount != 0)
+				this.api.Event.EnqueueMainThreadTask(() => {
+					((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-ignored", ignoredChunkCount));
+				}, null);
+			return false;
+		}
 
 		this.syncRequest.Prepared = true;
+		this.syncRequest.IgnoredChunkCount = ignoredChunkCount;
 		if(isDownload)
 			this.syncRequest.PendingChanges = newChunks;
 		else
@@ -473,27 +499,60 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			cartographyTable.MarkDirty();
 			this.logger.Audit($"{player.PlayerName} uploaded {uploadedChunks.Count} chunks to a cartography table at {cartographyData.Position}. ({beforeCount} -> {cartographyTable.Chunks.Count})");
 		}
+		if(cartographyData.RequestedChunks == null)
+			return true;
 
+		List<FastVec2i> approvedChanges = [];
 		Dictionary<RegionPosition, MapRegion> storedRegions = this.serverStorage![player.PlayerUID].Regions;
-		if(cartographyData.RequestedChunks != null)
-			foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in cartographyData.RequestedChunks)
-				storedRegions.GetOrCreate(RegionPosition.FromChunkPosition(item.Key)).SetColorAndZoomLevels(item.Key, item.Value.Color, item.Value.ZoomLevel, true);
-		this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{ApplyPendingChanges = true}));
+		cartographyTable.ProcessChunks(
+			cartographyData.RequestedChunks,
+			chunkPosition => storedRegions.GetOrCreate(RegionPosition.FromChunkPosition(chunkPosition)).GetZoomLevel(chunkPosition),
+			(chunkPosition, colorAndZoom) => {
+				storedRegions.GetOrCreate(RegionPosition.FromChunkPosition(chunkPosition)).SetColorAndZoomLevels(chunkPosition, colorAndZoom.Color, colorAndZoom.ZoomLevel, true);
+				approvedChanges.Add(chunkPosition);
+			},
+			null
+		);
+		this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Chunks = approvedChanges, ApplyPendingChanges = true}));
 		return true;
 	}
 
-	private void ProcessCartographyTableSynchronizationRequestClient() {
-		if(this.syncRequest == null)
+	private void ProcessCartographyTableSynchronizationRequestClient(List<FastVec2i> approvedChanges) {
+		if(this.syncRequest?.PendingChanges == null) {
+			this.logger.Warning("Received a cartography table synchronization packet when no changes were pending");
 			return;
+		}
 
+		int missingChunks = 0;
 		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
 		lock(this.clientStorage!.SaveLock)
-			foreach(KeyValuePair<FastVec2i, MapChunk> item in this.syncRequest.PendingChanges!) {
-				this.clientStorage.Chunks[item.Key] = item.Value;
-				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = item.Key, Pixels = item.Value.Pixels});
-			};
-		((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-download", this.syncRequest.PendingChanges.Count));
+			foreach(FastVec2i chunkPosition in approvedChanges) {
+				if(!this.syncRequest.PendingChanges.TryGetValue(chunkPosition, out MapChunk mapChunk)) {
+					++missingChunks;
+					continue;
+				}
+
+				this.clientStorage.Chunks[chunkPosition] = mapChunk;
+				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = chunkPosition, Pixels = mapChunk.Pixels});
+			}
+
+		IClientPlayer player = ((ICoreClientAPI)this.api).World.Player;
+		int downloadedChunks = approvedChanges.Count - missingChunks;
+		int ignoredChunks = this.syncRequest.PendingChanges.Count - downloadedChunks;
+		player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-download", downloadedChunks));
+		if(this.syncRequest.IgnoredChunkCount != 0)
+			player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-ignored", this.syncRequest.IgnoredChunkCount));
 		this.syncRequest = null;
+
+		if(missingChunks != 0 || ignoredChunks != 0) {
+			System.Text.StringBuilder message = new();
+			message.Append("Cartography table synchronization packet was processed only partially, the server ");
+			if(missingChunks != 0)
+				message.Append("approved ").Append(missingChunks).Append(" changes which weren't pending");
+			if(ignoredChunks != 0)
+				message.Append(missingChunks != 0 ? " and " : "").Append("rejected ").Append(ignoredChunks).Append(" pending changes");
+			this.logger.Warning(message.ToString());
+		}
 	}
 #endregion
 

@@ -38,7 +38,7 @@ public class BlockCartographyTable : Block {
 			return false;
 
 		if(this.api.Side == EnumAppSide.Client)
-			blockEntity.OpenGui();
+			blockEntity.OpenGui(player);
 		return true;
 	}
 

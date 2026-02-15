@@ -8,6 +8,7 @@
 	"durability": 512,
 	"attributes": {
 		"mapper": {
+			"type": "paintset",
 			"colorLevel": 1,
 			"minRange": 0,
 			"maxRange": 8,

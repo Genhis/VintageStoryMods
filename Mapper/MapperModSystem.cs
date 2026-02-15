@@ -2,6 +2,7 @@ namespace Mapper;
 
 using HarmonyLib;
 using Mapper.GameContent;
+using Mapper.Util;
 using Mapper.Util.Harmony;
 using Mapper.Util.IO;
 using Mapper.Util.Reflection;
@@ -39,6 +40,9 @@ public class MapperModSystem : ModSystem {
 	public override void StartClientSide(ICoreClientAPI api) {
 		base.StartClientSide(api);
 		if(MapperModSystem.enabled) {
+			int count = api.Gui.Icons.RegisterCustomIcons(api, "textures/icons/gui", "mapper");
+			this.Mod.Logger.Notification($"Registered {count} custom GUI icons");
+
 			this.Mod.Logger.Notification("Registering OnTick handler for compass updates");
 			this.compassNeedleUpdater = new CompassNeedleUpdater(api);
 			PatchDebugger.CheckPatchConflicts(this.Mod.Info.ModID, this.Mod.Logger, true);

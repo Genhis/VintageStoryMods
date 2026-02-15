@@ -1,20 +1,32 @@
 namespace Mapper.GameContent;
 
+using Mapper.Util;
 using Mapper.Util.IO;
 using Mapper.WorldMap;
 using System;
+using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
+using Vintagestory.API.MathTools;
+using Vintagestory.GameContent;
 
-public class BlockEntityCartographyTable : BlockEntity {
+public class BlockEntityCartographyTable : BlockEntityContainer {
 	public readonly MapChunks Chunks = [];
 	internal int lastUpdateID;
+	private ItemMap.CustomAttributes mapAttributes;
 
+	private readonly InventoryCartographyTable inventory = new();
 	private GuiDialogBlockEntity? guiDialog;
+
+	public override InventoryBase Inventory => this.inventory;
+	public override string InventoryClassName => "cartographytable";
 
 	public override void FromTreeAttributes(ITreeAttribute tree, IWorldAccessor world) {
 		base.FromTreeAttributes(tree, world);
+
+		ITreeAttribute? mapAttributes = tree.GetTreeAttribute("mapAttributes");
+		this.mapAttributes = mapAttributes == null ? new() : new(mapAttributes);
 
 		this.lastUpdateID = tree.GetInt("lastUpdateID");
 		this.Chunks.Clear();
@@ -31,6 +43,12 @@ public class BlockEntityCartographyTable : BlockEntity {
 
 	public override void ToTreeAttributes(ITreeAttribute tree) {
 		base.ToTreeAttributes(tree);
+
+		if(this.mapAttributes.AvailablePixels > 0) {
+			TreeAttribute mapAttributes = new();
+			this.mapAttributes.Save(mapAttributes);
+			tree["mapAttributes"] = mapAttributes;
+		}
 
 		System.Diagnostics.Debug.Assert(!tree.HasLargeAttribute("chunks"));
 		tree.SetInt("lastUpdateID", this.lastUpdateID);
@@ -51,6 +69,8 @@ public class BlockEntityCartographyTable : BlockEntity {
 			this.guiDialog.TryClose();
 			System.Diagnostics.Debug.Assert(this.guiDialog == null);
 		}
+		if(this.Api.Side == EnumAppSide.Server)
+			this.inventory.openedByPlayerGUIds.Clear();
 	}
 
 	public override void OnBlockUnloaded() {
@@ -63,15 +83,106 @@ public class BlockEntityCartographyTable : BlockEntity {
 		this.Dispose();
 	}
 
-	public void OpenGui() {
+	public override void OnReceivedClientPacket(IPlayer player, int packetID, byte[] data) {
+		if(packetID == (int)EnumBlockEntityPacketId.Close) {
+			player.InventoryManager.CloseInventory(this.inventory);
+			return;
+		}
+
+		if(!this.Api.World.Claims.TryAccess(player, this.Pos, EnumBlockAccessFlags.Use)) {
+			this.Api.World.Logger.Audit("Player {0} sent a packet for a cartography table at {1} but has no claim access, rejected", player.PlayerName, this.Pos);
+			return;
+		}
+
+		if(packetID == (int)EnumBlockEntityPacketId.Open)
+			player.InventoryManager.OpenInventory(this.inventory);
+		else if(packetID < (int)EnumBlockEntityPacketId.Open) {
+			this.inventory.InvNetworkUtil.HandleClientPacket(player, packetID, data);
+			this.Api.World.BlockAccessor.GetChunkAtBlockPos(this.Pos).MarkModified();
+		}
+	}
+
+	public override void OnReceivedServerPacket(int packetID, byte[] data) {
+		if(packetID == (int)EnumBlockEntityPacketId.Close) {
+			((ICoreClientAPI)this.Api).World.Player.InventoryManager.CloseInventory(this.inventory);
+			this.guiDialog?.TryClose();
+		}
+	}
+
+	public override void DropContents(Vec3d position) {
+		this.inventory.DropAll(position);
+	}
+
+	public void ProcessChunks(Dictionary<FastVec2i, ColorAndZoom> chunks, System.Func<FastVec2i, byte> getCurrentZoomLevel, Action<FastVec2i, ColorAndZoom>? processChunk, Action<FastVec2i>? ignoreChunk) {
+		ItemStack? mapStack = this.inventory.MapSlot.Itemstack;
+		ItemMap? mapItem = mapStack?.Item as ItemMap;
+		ItemMap.CustomAttributes mapAttributes = mapItem != null ? mapItem.MapAttributes : this.mapAttributes.WithAvailablePixels(0);
+		int mapStackPixels = mapItem != null ? mapAttributes.AvailablePixels * mapStack!.StackSize : 0;
+		int mapLeftoverPixels = mapAttributes.CanMergeWith(this.mapAttributes) ? this.mapAttributes.AvailablePixels : 0;
+		int mapTotalPixels = mapStackPixels + mapLeftoverPixels;
+		int usedMapDurability = 0;
+
+		ItemStack? paintsetStack = this.inventory.PainsetSlot.Itemstack;
+		byte paintsetColorLevel = ItemPaintset.GetColorLevel(paintsetStack);
+		int paintsetTotalPixels = ItemPaintset.GetAvailablePixels(paintsetStack);
+		int usedPaintsetDurability = 0;
+		foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in chunks) {
+			byte color = item.Value.Color;
+			byte zoomLevel = item.Value.ZoomLevel;
+
+			bool useMap = zoomLevel != getCurrentZoomLevel(item.Key);
+			bool usePaintset = !useMap || color > mapAttributes.ColorLevel;
+			if(useMap && (zoomLevel < mapAttributes.MinZoomLevel || zoomLevel > mapAttributes.MaxZoomLevel || mapTotalPixels <= usedMapDurability) ||
+			 usePaintset && (color > paintsetColorLevel || paintsetTotalPixels <= usedPaintsetDurability)) {
+				ignoreChunk?.Invoke(item.Key);
+				continue;
+			}
+			System.Diagnostics.Debug.Assert(useMap | usePaintset);
+
+			int usedDurability = MapChunk.GetRequiredDurability(zoomLevel);
+			if(useMap)
+				usedMapDurability += usedDurability;
+			if(usePaintset)
+				usedPaintsetDurability += usedDurability;
+
+			processChunk?.Invoke(item.Key, item.Value);
+		}
+		if(this.Api.Side == EnumAppSide.Client)
+			return;
+
+		if(usedMapDurability > 0)
+			this.ConsumeMap(mapAttributes, usedMapDurability, mapLeftoverPixels, mapTotalPixels);
+		if(usedPaintsetDurability > 0)
+			ItemPaintset.DamageItem(this.Api.World, null, this.inventory.PainsetSlot, paintsetTotalPixels, paintsetTotalPixels - usedPaintsetDurability);
+	}
+
+	private void ConsumeMap(in ItemMap.CustomAttributes mapAttributes, int usedMapDurability, int mapLeftoverPixels, int mapTotalPixels) {
+		if(usedMapDurability <= mapLeftoverPixels)
+			this.mapAttributes = mapAttributes.WithAvailablePixels(mapLeftoverPixels - usedMapDurability);
+		else if(usedMapDurability < mapTotalPixels) {
+			System.Diagnostics.Debug.Assert(mapAttributes.AvailablePixels > 0);
+			this.mapAttributes = mapAttributes.WithAvailablePixels((mapTotalPixels - usedMapDurability) % mapAttributes.AvailablePixels);
+			this.inventory.MapSlot.TakeOutAndMarkDirty(MathUtil.CeiledDiv(usedMapDurability - mapLeftoverPixels, mapAttributes.AvailablePixels));
+		}
+		else {
+			this.mapAttributes = new();
+			this.inventory.MapSlot.TakeOutWholeAndMarkDirty();
+		}
+		this.MarkDirty();
+	}
+
+	public void OpenGui(IPlayer player) {
 		ICoreClientAPI capi = (ICoreClientAPI)this.Api;
 		if(this.guiDialog == null) {
-			this.guiDialog = new GuiDialogBlockEntityCartographyTable(this.Pos, capi);
+			this.guiDialog = new GuiDialogBlockEntityCartographyTable(this.Pos, this.inventory, capi);
 			this.guiDialog.OnClosed += () => {
 				this.guiDialog.Dispose();
 				this.guiDialog = null;
 			};
-			this.guiDialog.TryOpen();
+			if(!this.guiDialog.TryOpen())
+				throw new InvalidOperationException("Cartography table GUI couldn't be opened");
+			capi.Network.SendPacketClient(this.inventory.Open(player));
+			capi.Network.SendBlockEntityPacket(this.Pos, (int)EnumBlockEntityPacketId.Open);
 		}
 		else
 			this.guiDialog.TryClose();

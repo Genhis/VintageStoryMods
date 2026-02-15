@@ -8,6 +8,7 @@ public class CartographyTableSyncRequest(BlockPos position, TransferDirection tr
 	public readonly TransferDirection TransferDirection = transferDirection;
 	public ClientCartographyTableData? PreparedPacket;
 	public MapChunks? PendingChanges;
+	public int IgnoredChunkCount;
 	public int UploadedChunkCount;
 	public bool Prepared;
 }

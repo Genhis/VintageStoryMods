@@ -9,6 +9,7 @@
 	"maxstacksize": 64,
 	"attributes": {
 		"mapper": {
+			"type": "map",
 			"colorLevel": 1,
 			"maxZoomLevel": 5,
 			"interactionData": {

@@ -41,8 +41,29 @@ public static class VintageStoryExtensions {
 		}));
 	}
 
+	public static void RegisterCustomIcon(this IconUtil iconUtil, ICoreClientAPI api, AssetLocation location) {
+		System.Diagnostics.Debug.Assert(location.Path[location.Path.LastIndexOf('.')..] == ".svg");
+		string iconName = location.Path[(location.Path.LastIndexOf('/') + 1)..location.Path.LastIndexOf('.')];
+		iconUtil.CustomIcons[$"{location.Domain}:{iconName}"] = (ctx, x, y, width, height, rgba) => {
+			api.Gui.DrawSvg(api.Assets.Get(location), (ImageSurface)ctx.GetTarget(), x, y, (int)width, (int)height, ColorUtil.FromRGBADoubles(rgba));
+		};
+	}
+
+	public static int RegisterCustomIcons(this IconUtil iconUtil, ICoreClientAPI api, string pathBegins, string domain) {
+		List<AssetLocation> locations = api.Assets.GetLocations(pathBegins, domain);
+		foreach(AssetLocation location in locations)
+			iconUtil.RegisterCustomIcon(api, location);
+		return locations.Count;
+	}
+
 	public static ItemStack TakeOutAndMarkDirty(this ItemSlot slot, int quantity) {
 		ItemStack result = slot.TakeOut(quantity);
+		slot.MarkDirty();
+		return result;
+	}
+
+	public static ItemStack TakeOutWholeAndMarkDirty(this ItemSlot slot) {
+		ItemStack result = slot.TakeOutWhole();
 		slot.MarkDirty();
 		return result;
 	}

@@ -11,6 +11,7 @@
 	"storageFlags": 257,
 	"attributes": {
 		"mapper": {
+			"type": "paintset",
 			"colorLevelByType": {
 				"*-vintage": 2,
 				"*-colorful": 3
