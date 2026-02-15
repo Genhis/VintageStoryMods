@@ -52,9 +52,4 @@ public readonly struct MapChunk {
 
 	public static int GetAvailablePixels(int chunkCount, byte minZoomLevel) => chunkCount * MapChunk.Area / (1 << (minZoomLevel * 2));
 	public static int GetRequiredDurability(byte zoomLevel) => MapChunk.Area >> (zoomLevel * 2);
-
-	public static bool operator <(MapChunk l, MapChunk r) {
-		return l.ColorAndZoom < r.ColorAndZoom;
-	}
-	public static bool operator >(MapChunk l, MapChunk r) => r < l;
 }

@@ -388,9 +388,9 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 #region CartographyTableSynchronization
-	public void ScheduleCartographyTableSynchronization(BlockPos position, TransferDirection transferDirection) {
+	public void ScheduleCartographyTableSynchronization(BlockPos position, CartographyTableSyncModes modes, TransferDirection transferDirection) {
 		if(this.syncRequest == null)
-			this.syncRequest = new CartographyTableSyncRequest(position, transferDirection);
+			this.syncRequest = new CartographyTableSyncRequest(position, modes, transferDirection);
 		else
 			((ICoreClientAPI)this.api).TriggerIngameError(this, "mapper-cartographytable-sync-pending", Lang.Get("mapper:error-cartographytable-sync-pending"));
 	}
@@ -404,13 +404,15 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		MapChunks newChunks;
 		Dictionary<FastVec2i, byte>? currentZoomLevels = null;
 		lock(this.clientStorage!.SaveLock) {
-			newChunks = isDownload ? this.clientStorage.Chunks.FindBetter(cartographyTable.Chunks) : cartographyTable.Chunks.FindBetter(this.clientStorage.Chunks);
 			if(isDownload) {
+				newChunks = this.clientStorage.Chunks.FindBetter(cartographyTable.Chunks, this.syncRequest.Modes);
 				currentZoomLevels = [];
 				foreach(KeyValuePair<FastVec2i, MapChunk> item in newChunks)
 					if(this.clientStorage.Chunks.TryGetValue(item.Key, out MapChunk mapChunk))
 						currentZoomLevels[item.Key] = mapChunk.ColorAndZoom.ZoomLevel;
 			}
+			else
+				newChunks = cartographyTable.Chunks.FindBetter(this.clientStorage.Chunks, this.syncRequest.Modes);
 		}
 
 		Dictionary<FastVec2i, ColorAndZoom>? requestedChunks = null;
