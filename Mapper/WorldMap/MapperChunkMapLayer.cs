@@ -142,7 +142,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 		if(changes.Count > 0) {
 			this.dirty = true;
-			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Changes = changes}));
+			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Mode = ServerToClientPacketMode.General, Changes = changes}));
 		}
 		return durability;
 	}
@@ -163,7 +163,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		string uid = player.PlayerUID;
 		if(this.joiningPlayers.Remove(uid)) {
 			this.logger.Notification($"Sending last known position to player {uid}");
-			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{LastKnownPosition = this.serverStorage!.GetOrCreate(uid).LastKnownPosition}));
+			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{
+				Mode = ServerToClientPacketMode.General,
+				LastKnownPosition = this.serverStorage!.GetOrCreate(uid).LastKnownPosition,
+			}));
 		}
 	}
 
@@ -175,11 +178,16 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		}
 
 		if(packet.RecoverMap)
-			this.mapSink.SendMapDataToClient(this, (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), SerializerUtil.Serialize(new ServerToClientPacket{Changes = this.serverStorage![packet.PlayerUID].PrepareClientRecovery(), RecoverMap = true}));
+			this.mapSink.SendMapDataToClient(this, (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), SerializerUtil.Serialize(new ServerToClientPacket{
+				Mode = ServerToClientPacketMode.RecoverMap,
+				Changes = this.serverStorage![packet.PlayerUID].PrepareClientRecovery(true),
+			}));
+		else if(packet.MigrationVersion != 0)
+			this.PreparePlayerMigration((IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), packet.MigrationVersion);
 		else if(packet.CartographyTableData != null) {
 			IServerPlayer player = (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID);
 			if(!this.ProcessCartographyTableSynchronizationRequestServer(player, packet.CartographyTableData) && packet.CartographyTableData.RequestedChunks != null)
-				this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{ApplyPendingChanges = true}));
+				this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Mode = ServerToClientPacketMode.ApplyPendingChanges}));
 		}
 		else {
 			this.dirty = true;
@@ -187,9 +195,18 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		}
 	}
 
+	private void PreparePlayerMigration(IServerPlayer player, uint version) {
+		this.logger.Notification($"Player {player.PlayerName} requested a migration for version {version}");
+		if(version < 2)
+			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{
+				Mode = ServerToClientPacketMode.ApplyChunkColorMigration,
+				Changes = this.serverStorage![player.PlayerUID].PrepareClientRecovery(false),
+			}));
+	}
+
 	public override void OnDataFromServer(byte[] data) {
 		ServerToClientPacket packet = SerializerUtil.Deserialize<ServerToClientPacket>(data);
-		if(packet.RecoverMap && this.status == Status.CorruptedData) {
+		if(packet.Mode == ServerToClientPacketMode.RecoverMap && this.status == Status.CorruptedData) {
 			this.status = Status.Enabled;
 			((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-mapper-restore-client-request-response"));
 			if(packet.Changes == null)
@@ -198,11 +215,21 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(!this.Enabled)
 			return;
 
-		if(packet.ApplyPendingChanges) {
+		if(packet.Mode == ServerToClientPacketMode.ApplyPendingChanges) {
 			this.ProcessCartographyTableSynchronizationRequestClient(packet.Chunks ?? []);
 			return;
 		}
+		if(packet.Mode == ServerToClientPacketMode.ApplyChunkColorMigration) {
+			this.clientStorage!.ApplyMigration(packet, this.logger, ref this.dirty);
+			return;
+		}
 		if(packet.Changes == null) {
+			if(this.clientStorage!.DataVersion < ClientMapStorage.LatestServerMigrationVersion)
+				this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{
+					PlayerUID = ((ICoreClientAPI)this.api).World.Player.PlayerUID,
+					MigrationVersion = this.clientStorage.DataVersion,
+				}));
+
 			this.lastKnownPosition = packet.LastKnownPosition;
 			if(this.mapSink is WorldMapManager manager)
 				if(this.lastKnownPosition != null && manager.worldMapDlg?.DialogType == EnumDialogType.HUD)
@@ -515,7 +542,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			},
 			null
 		);
-		this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Chunks = approvedChanges, ApplyPendingChanges = true}));
+		this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Mode = ServerToClientPacketMode.ApplyPendingChanges, Chunks = approvedChanges}));
 		return true;
 	}
 

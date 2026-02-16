@@ -33,6 +33,8 @@ public class DictionaryQueue<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TVal
 		this.queue.EnsureCapacity(capacity);
 	}
 
+	public bool ContainsKey(TKey key) => this.dictionary.ContainsKey(key);
+
 	public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
 		foreach(TKey key in this.queue)
 			yield return new KeyValuePair<TKey, TValue>(key, this.dictionary[key]);

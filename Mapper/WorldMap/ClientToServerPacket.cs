@@ -9,6 +9,7 @@ public class ClientToServerPacket {
 	public required string PlayerUID;
 	public ClientCartographyTableData? CartographyTableData;
 	public Vec3d? LastKnownPosition;
+	public uint MigrationVersion;
 	public bool RecoverMap;
 }
 

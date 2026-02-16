@@ -9,8 +9,10 @@ using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 
 public class ClientMapStorage {
+	public const uint LatestServerMigrationVersion = 2;
 	public readonly MapChunks Chunks = [];
 	public readonly DictionaryQueue<FastVec2i, ColorAndZoom> ChunksToRedraw = new();
+	public uint DataVersion;
 
 	/// <summary>
 	/// Always use this lock when writing to client storage.<br/>
@@ -41,6 +43,7 @@ public class ClientMapStorage {
 	}
 
 	private void LoadInternal(VersionedReader input, MapBackground background) {
+		this.DataVersion = input.InputVersion;
 		this.Chunks.Load(input, background);
 
 		int count = input.ReadInt32();
@@ -70,5 +73,31 @@ public class ClientMapStorage {
 			output.Write(item.Key);
 			item.Value.Save(output);
 		}
+	}
+
+	public void ApplyMigration(ServerToClientPacket packet, ILogger logger, ref bool dirtyFlag) {
+		logger.Debug("Received a migration packet for version " + this.DataVersion);
+		switch(packet.Mode) {
+			case ServerToClientPacketMode.ApplyChunkColorMigration:
+				if(packet.Changes != null)
+					lock(this.SaveLock)
+						this.ApplyChunkColorMigration(packet.Changes, logger, ref dirtyFlag);
+				break;
+		}
+		this.DataVersion = VersionedWriter.OutputVersion;
+	}
+
+	private void ApplyChunkColorMigration(Dictionary<FastVec2i, ColorAndZoom> chunks, ILogger logger, ref bool dirtyFlag) {
+		int missingChunks = 0;
+		foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in chunks)
+			if(!this.Chunks.TryGetValue(item.Key, out MapChunk mapChunk))
+				++missingChunks;
+			else if(mapChunk.ColorAndZoom.Color != item.Value.Color && !this.ChunksToRedraw.ContainsKey(item.Key)) {
+				dirtyFlag = true;
+				this.Chunks[item.Key] = new MapChunk(mapChunk.Pixels, item.Value);
+			}
+
+		if(missingChunks != 0)
+			logger.Warning($"Migration applied; client storage is missing {missingChunks} chunks");
 	}
 }

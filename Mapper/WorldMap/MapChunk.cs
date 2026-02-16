@@ -9,7 +9,6 @@ public readonly struct MapChunk {
 	public const int Area = Size * Size;
 
 	public readonly int[] Pixels;
-	// TODO: this will need a migration for retrieving color from the server because clients didn't use to store it
 	public readonly ColorAndZoom ColorAndZoom;
 
 	public MapChunk(int[] pixels, ColorAndZoom colorAndZoom) {

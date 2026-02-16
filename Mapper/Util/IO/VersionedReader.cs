@@ -15,7 +15,7 @@ public class VersionedReader : BufferedReader {
 	public static VersionedReader Create(Stream stream, int bufferSize = SaveLoadExtensions.DefaultBufferSize, bool leaveOpen = false, bool compressed = false) {
 		Span<byte> versionBuffer = stackalloc byte[sizeof(uint)];
 		stream.ReadExactly(versionBuffer);
-		uint version = BinaryPrimitives.ReadUInt32LittleEndian(versionBuffer);
+		uint version = Math.Max(BinaryPrimitives.ReadUInt32LittleEndian(versionBuffer), 1); // Let's leave version 0 as an empty value
 		if(version > VersionedWriter.OutputVersion)
 			throw new InvalidDataException($"Input version {version} is newer than {VersionedWriter.OutputVersion}, please update the mod.");
 
