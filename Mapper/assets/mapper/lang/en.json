@@ -25,6 +25,7 @@
 	"gui-cartographytable-update-color": "Improve color",
 	"gui-cartographytable-update-empty": "Include uncharted chunks",
 	"gui-cartographytable-update-resolution": "Improve resolution",
+	"gui-cartographytable-update-time": "Update newer chunks",
 	"gui-cartographytable-upload": "Upload local data",
 	"heldhelp-paint-area": "Paint area",
 	"heldhelp-use": "Use",

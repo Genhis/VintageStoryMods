@@ -17,4 +17,5 @@ public class ServerToClientPacket {
 	public Dictionary<FastVec2i, ColorAndZoom>? Changes;
 	public List<FastVec2i>? Chunks;
 	public Vec3d? LastKnownPosition;
+	public int Time;
 }

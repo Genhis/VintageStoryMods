@@ -10,6 +10,7 @@ public enum CartographyTableSyncModes {
 	EmptyChunks = 1,
 	BetterColor = 2,
 	BetterResolution = 4,
+	MoreRecent = 8,
 }
 
 public class CartographyTableSyncRequest(BlockPos position, CartographyTableSyncModes modes, TransferDirection transferDirection) {

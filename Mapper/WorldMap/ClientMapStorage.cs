@@ -94,7 +94,7 @@ public class ClientMapStorage {
 				++missingChunks;
 			else if(mapChunk.ColorAndZoom.Color != item.Value.Color && !this.ChunksToRedraw.ContainsKey(item.Key)) {
 				dirtyFlag = true;
-				this.Chunks[item.Key] = new MapChunk(mapChunk.Pixels, item.Value);
+				this.Chunks[item.Key] = new MapChunk(mapChunk.Pixels, mapChunk.Timestamp, item.Value);
 			}
 
 		if(missingChunks != 0)

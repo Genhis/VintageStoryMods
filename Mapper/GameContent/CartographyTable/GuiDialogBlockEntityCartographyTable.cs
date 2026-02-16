@@ -52,6 +52,7 @@ public class GuiDialogBlockEntityCartographyTable : GuiDialogBlockEntity {
 				.AddItemSlotGrid(this.Inventory, this.SendInventoryPacket, 1, [0], bounds.Copy(), "mapSlot")
 				.AddItemSlotGrid(this.Inventory, this.SendInventoryPacket, 1, [1], bounds.RightCopy(bounds.fixedWidth), "paintsetSlot")
 				.Do(AddCartographyModeSwitch("mapper:gui-cartographytable-update-empty", CartographyTableSyncModes.EmptyChunks, bounds.WithFixedX(4).WithFixedSize(MaxWidth - 4, switchFont.GetFontExtents().Height).BelowCopyAndUpdate(0, 36)))
+				.Do(AddCartographyModeSwitch("mapper:gui-cartographytable-update-time", CartographyTableSyncModes.MoreRecent, bounds.BelowCopyAndUpdate(0, 5)))
 				.Do(AddCartographyModeSwitch("mapper:gui-cartographytable-update-resolution", CartographyTableSyncModes.BetterResolution, bounds.BelowCopyAndUpdate(0, 5)))
 				.Do(AddCartographyModeSwitch("mapper:gui-cartographytable-update-color", CartographyTableSyncModes.BetterColor, bounds.BelowCopyAndUpdate(0, 5)))
 				.AddButton(Lang.Get("mapper:gui-cartographytable-download"), () => this.RunAction(TransferDirection.Download), bounds.WithFixedX(0).WithFixedSize(MaxWidth, CairoFont.ButtonText().GetFontExtents().Height * 1.2).BelowCopyAndUpdate(0, -5))

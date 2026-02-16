@@ -44,15 +44,15 @@ public class MapChunks : Dictionary<FastVec2i, MapChunk> {
 	public MapChunks FindBetter(MapChunks other, CartographyTableSyncModes modes) {
 		MapChunks result = [];
 		foreach(KeyValuePair<FastVec2i, MapChunk> item in other) {
-			if(item.Value.ColorAndZoom.Color == 0)
+			MapChunk otherChunk = item.Value;
+			if(otherChunk.ColorAndZoom.Color == 0)
 				continue;
 			if(!this.TryGetValue(item.Key, out MapChunk chunk)) {
 				if(modes.HasFlag(CartographyTableSyncModes.EmptyChunks))
-					result[item.Key] = item.Value;
+					result[item.Key] = otherChunk;
 			}
-			else if(modes.HasFlag(CartographyTableSyncModes.BetterColor) && chunk.ColorAndZoom.Color < item.Value.ColorAndZoom.Color ||
-			 modes.HasFlag(CartographyTableSyncModes.BetterResolution) && chunk.ColorAndZoom.ZoomLevel > item.Value.ColorAndZoom.ZoomLevel)
-				result[item.Key] = item.Value;
+			else if(otherChunk.IsBetterThan(chunk, modes))
+				result[item.Key] = otherChunk;
 		}
 		return result;
 	}

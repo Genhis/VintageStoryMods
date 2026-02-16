@@ -35,12 +35,15 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	private Vec3d? lastKnownPosition;
 	private float lastThreadUpdateTime;
 	private float clientAutosaveTimer;
+	private int elapsedSecondsAtStart;
 
 	private ILogger logger;
+	private int startTime;
 	private bool dirty;
 	private enum Status { Enabled, DisabledMap, CorruptedData }
 	private Status status = Status.Enabled;
 
+	public int CurrentTime => this.startTime + (int)(this.api.World.ElapsedMilliseconds / 1000);
 	public override EnumMapAppSide DataSide => EnumMapAppSide.Server;
 	public bool Enabled => this.status == Status.Enabled;
 	public readonly Dictionary<object, Action<FastVec2i>> OnChunkChanged = [];
@@ -50,9 +53,12 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(api is ICoreServerAPI sapi) {
 			this.serverStorage = [];
 			this.joiningPlayers = [];
+			this.startTime = sapi.WorldManager.SaveGame.GetData<int>("mapper:time");
 
 			sapi.Event.GameWorldSave += () => {
-				if(this.dirty && this.serverStorage.Save((ICoreServerAPI)this.api, this.logger))
+				ICoreServerAPI sapi = (ICoreServerAPI)this.api;
+				sapi.WorldManager.SaveGame.StoreData("mapper:time", this.CurrentTime);
+				if(this.dirty && this.serverStorage.Save(sapi, this.logger))
 					this.dirty = false;
 			};
 			sapi.Event.PlayerJoin += player => this.joiningPlayers.Add(player.PlayerUID);
@@ -166,8 +172,15 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{
 				Mode = ServerToClientPacketMode.General,
 				LastKnownPosition = this.serverStorage!.GetOrCreate(uid).LastKnownPosition,
+				Time = this.CurrentTime,
 			}));
 		}
+	}
+
+	public override void OnViewChangedClient(List<FastVec2i> nowVisible, List<FastVec2i> nowHidden) {
+		if(this.elapsedSecondsAtStart == 0)
+			this.elapsedSecondsAtStart = (int)(this.api.World.ElapsedMilliseconds / 1000);
+		base.OnViewChangedClient(nowVisible, nowHidden);
 	}
 
 	public override void OnDataFromClient(byte[] data) {
@@ -224,6 +237,9 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return;
 		}
 		if(packet.Changes == null) {
+			if(this.startTime == 0)
+				this.startTime = packet.Time - this.elapsedSecondsAtStart;
+
 			if(this.clientStorage!.DataVersion < ClientMapStorage.LatestServerMigrationVersion)
 				this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{
 					PlayerUID = ((ICoreClientAPI)this.api).World.Player.PlayerUID,
@@ -247,7 +263,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in changes) {
 			if(!this.clientStorage!.Chunks.ContainsKey(item.Key) || item.Value.Color == 0) {
 				int[] pixels = this.background!.GetPixels(item.Key, item.Value.ZoomLevel);
-				this.clientStorage.Chunks[item.Key] = new MapChunk(pixels, new ColorAndZoom(0, item.Value.ZoomLevel));
+				this.clientStorage.Chunks[item.Key] = new MapChunk(pixels, 0, new ColorAndZoom(0, item.Value.ZoomLevel));
 				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = item.Key, Pixels = pixels});
 			}
 			if(item.Value.Color > 0)
@@ -322,6 +338,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 					this.clientStorage.ChunksToRedraw.Enqueue(redrawRequest);
 				continue;
 			}
+
+			int timestamp = this.CurrentTime;
 			if(redrawRequest.Value.Color == 1)
 				MapperChunkMapLayer.ConvertToGrayscale(pixels, this.background!.GetPixels(redrawRequest.Key, redrawRequest.Value.ZoomLevel), (uint)this.colorsByCode.Get("ocean", 0) | 0xFF000000);
 			if(redrawRequest.Value.ZoomLevel > 0)
@@ -329,7 +347,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 			lock(this.clientStorage.SaveLock) {
 				this.dirty = true;
-				this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, redrawRequest.Value);
+				this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, timestamp, redrawRequest.Value);
 			}
 			readyMapPieces.Enqueue(new ReadyMapPiece{Cord = redrawRequest.Key, Pixels = pixels});
 
