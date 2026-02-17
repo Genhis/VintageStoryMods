@@ -22,6 +22,10 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 	public override InventoryBase Inventory => this.inventory;
 	public override string InventoryClassName => "cartographytable";
 
+	public BlockEntityCartographyTable() {
+		this.inventory.SlotModified += this.OnInventoryModified;
+	}
+
 	public override void FromTreeAttributes(ITreeAttribute tree, IWorldAccessor world) {
 		base.FromTreeAttributes(tree, world);
 
@@ -81,6 +85,32 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 	public override void OnBlockRemoved() {
 		base.OnBlockRemoved();
 		this.Dispose();
+	}
+
+	private void OnInventoryModified(int slotID) {
+		this.MarkDirty(this.Api.Side == EnumAppSide.Server);
+	}
+
+	public override bool OnTesselation(ITerrainMeshPool chunkMeshes, ITesselatorAPI tesselator) {
+		// OnTesselation runs in a thread, so be extra careful when accessing the inventory.
+		// I assume slots won't change, so the iterator should stay valid, but item stacks might.
+		// Let's copy stack data to local variables and check if it can be used.
+		float[] matrix = MathUtil.HorizontalBlockRotationMatrix[this.Block.LastCodePart()];
+		foreach(ItemSlot slot in this.inventory) {
+			ItemStack? stack = slot.Itemstack;
+			if(stack == null)
+				continue;
+
+			CollectibleObject? obj = stack.Collectible;
+			int stackSize = stack.StackSize;
+			if(obj == null || stackSize <= 0)
+				continue;
+
+			BehaviorCartographyTableDisplay? displayBehavior = obj.GetBehavior<BehaviorCartographyTableDisplay>();
+			if(displayBehavior != null && displayBehavior.Valid)
+				chunkMeshes.AddMeshData(displayBehavior.GetMesh(stackSize, obj.MaxStackSize), matrix);
+		}
+		return false;
 	}
 
 	public override void OnReceivedClientPacket(IPlayer player, int packetID, byte[] data) {

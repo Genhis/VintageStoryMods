@@ -30,6 +30,19 @@
 			}
 		}
 	},
+	"behaviors": [
+		{
+			"name": "MapperCartographyTableDisplay",
+			"properties": {
+				"shapes": [
+					{"base": "block/attachment/cartographytable-map", "quantityElements": 5},
+					{"base": "block/attachment/cartographytable-map", "quantityElements": 8},
+					{"base": "block/attachment/cartographytable-map", "quantityElements": 11},
+					{"base": "block/attachment/cartographytable-map"}
+				]
+			}
+		}
+	],
 	"shape": {"base": "item/map"},
 	"textures": {"map": {"base": "item/map-{tier}"}},
 	"guiTransform": {

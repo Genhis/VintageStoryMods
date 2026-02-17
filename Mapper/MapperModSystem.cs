@@ -31,6 +31,7 @@ public class MapperModSystem : ModSystem {
 			api.ModLoader.GetModSystem<WorldMapManager>().RegisterMapLayer<MapperChunkMapLayer>("chunks", 0);
 			api.RegisterBlockClass("MapperCartographyTable", typeof(BlockCartographyTable));
 			api.RegisterBlockEntityClass("MapperCartographyTable", typeof(BlockEntityCartographyTable));
+			api.RegisterCollectibleBehaviorClass("MapperCartographyTableDisplay", typeof(BehaviorCartographyTableDisplay));
 			api.RegisterCollectibleBehaviorClass("MapperCompassNeedle", typeof(BehaviorCompassNeedle));
 			api.RegisterItemClass("MapperMap", typeof(ItemMap));
 			api.RegisterItemClass("MapperPaintbrush", typeof(ItemPaintbrush));
@@ -45,7 +46,8 @@ public class MapperModSystem : ModSystem {
 
 			this.Mod.Logger.Notification("Registering OnTick handler for compass updates");
 			this.compassNeedleUpdater = new CompassNeedleUpdater(api);
-			PatchDebugger.CheckPatchConflicts(this.Mod.Info.ModID, this.Mod.Logger, true);
+
+			api.Event.LevelFinalize += this.OnLevelFinalizedClient;
 		}
 	}
 
@@ -71,6 +73,11 @@ public class MapperModSystem : ModSystem {
 			this.harmony.UnpatchAll(this.harmony.Id);
 			this.harmony = null;
 		}
+	}
+
+	private void OnLevelFinalizedClient() {
+		this.Mod.Logger.Notification($"Loaded {TesselationUtil.LoadedMeshCount} additional shapes and {CustomTextureSource.LoadedTextureCount} textures for dynamic effects");
+		PatchDebugger.CheckPatchConflicts(this.Mod.Info.ModID, this.Mod.Logger, true);
 	}
 
 	public override void Dispose() {
