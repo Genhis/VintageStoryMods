@@ -1,7 +1,9 @@
 namespace Mapper.GameContent;
 
+using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
+using Vintagestory.API.Util;
 
 public class BlockCartographyTable : Block {
 	public override bool TryPlaceBlock(IWorldAccessor world, IPlayer player, ItemStack stack, BlockSelection selection, ref string failureCode) {
@@ -13,8 +15,8 @@ public class BlockCartographyTable : Block {
 		if(!this.CanPlaceBlock(world, player, secondSelection, ref failureCode))
 			return false;
 
-		world.BlockAccessor.GetBlock(this.CodeWithParts("left", facing.Code)).DoPlaceBlock(world, player, selection, stack);
-		world.BlockAccessor.GetBlock(this.CodeWithParts("right", facing.Code)).DoPlaceBlock(world, player, secondSelection, stack);
+		world.GetBlock(this.CodeWithParts("left", facing.Code)).DoPlaceBlock(world, player, selection, stack);
+		world.GetBlock(this.CodeWithParts("right", facing.Code)).DoPlaceBlock(world, player, secondSelection, stack);
 		return true;
 	}
 
@@ -31,14 +33,14 @@ public class BlockCartographyTable : Block {
 	}
 
 	public override bool OnBlockInteractStart(IWorldAccessor world, IPlayer player, BlockSelection selection) {
-		BlockPos blockEntityPosition = this.LastCodePart(1) == "left" ? selection.Position : selection.Position.AddCopy(BlockFacing.FromCode(this.LastCodePart()).GetCCW());
+		BlockPos blockEntityPosition = this.GetBlockEntityPosition(selection.Position);
 		if(!world.Claims.TryAccess(player, blockEntityPosition, EnumBlockAccessFlags.Use))
 			return false;
 		if(world.BlockAccessor.GetBlockEntity(blockEntityPosition) is not BlockEntityCartographyTable blockEntity)
 			return false;
 
 		if(this.api.Side == EnumAppSide.Client)
-			blockEntity.OpenGui(player);
+			blockEntity.ToggleGui(player);
 		return true;
 	}
 
@@ -51,7 +53,7 @@ public class BlockCartographyTable : Block {
 	}
 
 	public override ItemStack OnPickBlock(IWorldAccessor world, BlockPos position) {
-		return new ItemStack(world.BlockAccessor.GetBlock(this.CodeWithParts("left", "north")));
+		return new ItemStack(world.GetBlock(this.CodeWithParts("left", "north")));
 	}
 
 	public override AssetLocation GetHorizontallyFlippedBlockCode(EnumAxis axis) {
@@ -63,4 +65,18 @@ public class BlockCartographyTable : Block {
 		int rotatedIndex = GameMath.Mod(BlockFacing.FromCode(this.LastCodePart()).HorizontalAngleIndex - angle / 90, 4);
 		return this.CodeWithParts(BlockFacing.HORIZONTALS_ANGLEORDER[rotatedIndex].Code);
 	}
+
+	public override string GetPlacedBlockInfo(IWorldAccessor world, BlockPos position, IPlayer player) {
+		if(this.EntityClass != null)
+			return base.GetPlacedBlockInfo(world, position, player);
+		return world.GetBlock(this.CodeWithParts("left", this.LastCodePart())).GetPlacedBlockInfo(world, this.GetBlockEntityPosition(position), player);
+	}
+
+	public override WorldInteraction[] GetPlacedBlockInteractionHelp(IWorldAccessor world, BlockSelection selection, IPlayer player) {
+		return new WorldInteraction[] {
+			new() {ActionLangCode = "mapper:blockhelp-open", MouseButton = EnumMouseButton.Right},
+		}.Append(base.GetPlacedBlockInteractionHelp(world, selection, player));
+	}
+
+	public BlockPos GetBlockEntityPosition(BlockPos position) => this.LastCodePart(1) == "left" ? position : position.AddCopy(BlockFacing.FromCode(this.LastCodePart()).GetCCW());
 }

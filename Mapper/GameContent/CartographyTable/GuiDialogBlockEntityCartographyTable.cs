@@ -25,12 +25,17 @@ public class GuiDialogBlockEntityCartographyTable : GuiDialogBlockEntity {
 		base.OnGuiClosed();
 	}
 
+	public void UpdateChunkCount(int count) {
+		(this.SingleComposer.GetElement("chunkCount") as GuiElementDynamicText)?.SetNewText(Lang.Get("mapper:gui-cartographytable-stored-chunks", count));
+	}
+
 	private void SetupDialog() {
 		const double MaxWidth = 320;
 		ElementBounds dialogBounds = ElementStdBounds.AutosizedMainDialog.WithAlignment(EnumDialogArea.CenterMiddle).WithFixedAlignmentOffset(-GuiStyle.DialogToScreenPadding, 0);
 		ElementBounds backgroundBounds = ElementBounds.Fill.WithFixedPadding(GuiStyle.ElementToDialogPadding).WithSizing(ElementSizing.FitToChildren);
-		ElementBounds bounds = ElementStdBounds.SlotGrid(EnumDialogArea.None, 0, 30, 1, 1);
+		ElementBounds bounds = ElementStdBounds.SlotGrid(EnumDialogArea.None, 0, 64, 1, 1);
 		bounds.WithFixedX(MaxWidth / 2 - bounds.fixedWidth * 1.5);
+		CairoFont textFont = CairoFont.ButtonText().WithColor([1, 1, 1, 1]).WithFontSize(22);
 		CairoFont switchFont = CairoFont.ButtonText().WithFontSize(18);
 
 		Action<GuiComposer> AddCartographyModeSwitch(string langKey, CartographyTableSyncModes mode, ElementBounds bounds) {
@@ -49,6 +54,7 @@ public class GuiDialogBlockEntityCartographyTable : GuiDialogBlockEntity {
 			.AddShadedDialogBG(backgroundBounds)
 			.AddDialogTitleBar(this.DialogTitle, this.CloseIconPressed)
 			.BeginChildElements(backgroundBounds)
+				.AddDynamicText(string.Empty, textFont, new ElementBounds{fixedY = 20, fixedWidth = MaxWidth, fixedHeight = textFont.GetFontExtents().Height}, "chunkCount")
 				.AddItemSlotGrid(this.Inventory, this.SendInventoryPacket, 1, [0], bounds.Copy(), "mapSlot")
 				.AddItemSlotGrid(this.Inventory, this.SendInventoryPacket, 1, [1], bounds.RightCopy(bounds.fixedWidth), "paintsetSlot")
 				.Do(AddCartographyModeSwitch("mapper:gui-cartographytable-update-empty", CartographyTableSyncModes.EmptyChunks, bounds.WithFixedX(4).WithFixedSize(MaxWidth - 4, switchFont.GetFontExtents().Height).BelowCopyAndUpdate(0, 36)))

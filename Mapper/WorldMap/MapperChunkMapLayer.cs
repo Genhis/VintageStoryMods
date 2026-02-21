@@ -544,14 +544,14 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			foreach(KeyValuePair<FastVec2i, MapChunk> item in uploadedChunks)
 				cartographyTable.Chunks[item.Key] = item.Value;
 			cartographyTable.MarkDirty();
-			this.logger.Audit($"{player.PlayerName} uploaded {uploadedChunks.Count} chunks to a cartography table at {cartographyData.Position}. ({beforeCount} -> {cartographyTable.Chunks.Count})");
+			this.logger.Audit($"{player.PlayerName} uploaded {uploadedChunks.Count} chunks to a cartography table at {cartographyData.Position} ({beforeCount} -> {cartographyTable.Chunks.Count})");
 		}
 		if(cartographyData.RequestedChunks == null)
 			return true;
 
 		List<FastVec2i> approvedChanges = [];
 		Dictionary<RegionPosition, MapRegion> storedRegions = this.serverStorage![player.PlayerUID].Regions;
-		cartographyTable.ProcessChunks(
+		BlockEntityCartographyTable.ProcessChunksResult result = cartographyTable.ProcessChunks(
 			cartographyData.RequestedChunks,
 			chunkPosition => storedRegions.GetOrCreate(RegionPosition.FromChunkPosition(chunkPosition)).GetZoomLevel(chunkPosition),
 			(chunkPosition, colorAndZoom) => {
@@ -560,6 +560,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			},
 			null
 		);
+		this.logger.Audit($"{player.PlayerName} downloaded {approvedChanges.Count} chunks from a cartography table at {cartographyData.Position} and used {result.UsedMapDurability} map pixels from '{result.UsedMapCode?.ToString() ?? "<null>"}' and {result.UsedPaintsetDurability} paintset pixels from '{result.UsedPaintsetCode?.ToString() ?? "<null>"}'");
 		this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Mode = ServerToClientPacketMode.ApplyPendingChanges, Chunks = approvedChanges}));
 		return true;
 	}

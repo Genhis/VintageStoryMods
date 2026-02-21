@@ -17,7 +17,7 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 	private ItemMap.CustomAttributes mapAttributes;
 
 	private readonly InventoryCartographyTable inventory = new();
-	private GuiDialogBlockEntity? guiDialog;
+	private GuiDialogBlockEntityCartographyTable? guiDialog;
 
 	public override InventoryBase Inventory => this.inventory;
 	public override string InventoryClassName => "cartographytable";
@@ -43,6 +43,7 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 			world.Api.Logger.Error("[mapper] Failed to load cartography table data:\n" + ex.ToString());
 			this.Chunks.Clear();
 		}
+		this.guiDialog?.UpdateChunkCount(this.Chunks.Count);
 	}
 
 	public override void ToTreeAttributes(ITreeAttribute tree) {
@@ -57,8 +58,8 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 		System.Diagnostics.Debug.Assert(!tree.HasLargeAttribute("chunks"));
 		tree.SetInt("lastUpdateID", this.lastUpdateID);
 		try {
-			if(this.Chunks.Count != 0) {
-				byte[] data = this.Chunks.ToBytes()!;
+			byte[]? data = this.Chunks.ToBytes();
+			if(data != null) {
 				int numParts = tree.SetBytesLarge("chunks", data);
 				this.Api.Logger.VerboseDebug($"[mapper] Cartography table at {this.Pos} saved {this.Chunks.Count} chunks taking {data.Length / 1024.0 / 1024.0:0.###} MB of space split to {numParts} attributes");
 			}
@@ -143,7 +144,13 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 		this.inventory.DropAll(position);
 	}
 
-	public void ProcessChunks(Dictionary<FastVec2i, ColorAndZoom> chunks, System.Func<FastVec2i, byte> getCurrentZoomLevel, Action<FastVec2i, ColorAndZoom>? processChunk, Action<FastVec2i>? ignoreChunk) {
+	public readonly struct ProcessChunksResult(AssetLocation? usedMapCode, AssetLocation? usedPaintsetCode, int usedMapDurability, int usedPaintsetDurability) {
+		public readonly AssetLocation? UsedMapCode = usedMapCode;
+		public readonly AssetLocation? UsedPaintsetCode = usedPaintsetCode;
+		public readonly int UsedMapDurability = usedMapDurability;
+		public readonly int UsedPaintsetDurability = usedPaintsetDurability;
+	}
+	public ProcessChunksResult ProcessChunks(Dictionary<FastVec2i, ColorAndZoom> chunks, System.Func<FastVec2i, byte> getCurrentZoomLevel, Action<FastVec2i, ColorAndZoom>? processChunk, Action<FastVec2i>? ignoreChunk) {
 		ItemStack? mapStack = this.inventory.MapSlot.Itemstack;
 		ItemMap? mapItem = mapStack?.Item as ItemMap;
 		ItemMap.CustomAttributes mapAttributes = mapItem != null ? mapItem.MapAttributes : this.mapAttributes.WithAvailablePixels(0);
@@ -177,13 +184,16 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 
 			processChunk?.Invoke(item.Key, item.Value);
 		}
+
+		ProcessChunksResult result = new(mapItem?.Code, paintsetStack?.Collectible.Code, usedMapDurability, usedPaintsetDurability);
 		if(this.Api.Side == EnumAppSide.Client)
-			return;
+			return result; // Client doesn't really use any items; return what items would be used if this were the server.
 
 		if(usedMapDurability > 0)
 			this.ConsumeMap(mapAttributes, usedMapDurability, mapLeftoverPixels, mapTotalPixels);
 		if(usedPaintsetDurability > 0)
 			ItemPaintset.DamageItem(this.Api.World, null, this.inventory.PainsetSlot, paintsetTotalPixels, paintsetTotalPixels - usedPaintsetDurability);
+		return result;
 	}
 
 	private void ConsumeMap(in ItemMap.CustomAttributes mapAttributes, int usedMapDurability, int mapLeftoverPixels, int mapTotalPixels) {
@@ -201,7 +211,7 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 		this.MarkDirty();
 	}
 
-	public void OpenGui(IPlayer player) {
+	public void ToggleGui(IPlayer player) {
 		ICoreClientAPI capi = (ICoreClientAPI)this.Api;
 		if(this.guiDialog == null) {
 			this.guiDialog = new GuiDialogBlockEntityCartographyTable(this.Pos, this.inventory, capi);
@@ -209,6 +219,7 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 				this.guiDialog.Dispose();
 				this.guiDialog = null;
 			};
+			this.guiDialog.UpdateChunkCount(this.Chunks.Count);
 			if(!this.guiDialog.TryOpen())
 				throw new InvalidOperationException("Cartography table GUI couldn't be opened");
 			capi.Network.SendPacketClient(this.inventory.Open(player));
