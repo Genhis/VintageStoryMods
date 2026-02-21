@@ -299,7 +299,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		this.lastThreadUpdateTime = 0;
 
 		this.CheckChunksToRedraw();
-		this.ProcessMappedChunks();
+		lock(this.clientStorage!.SaveLock)
+			this.ProcessMappedChunks();
 	}
 
 	private void CheckLastKnownPosition() {
@@ -403,7 +404,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	public int? GetScaleFactor(IClientPlayer? player, FastVec2i chunkPosition) {
 		static int? GetCompassScaleFactor(ItemSlot slot) => BehaviorCompassNeedle.GetScaleFactor(slot.Itemstack?.ItemAttributes);
 
-		int? scaleFactor = this.Enabled && this.clientStorage!.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk) ? 1 << mapChunk.ColorAndZoom.ZoomLevel : null;
+		int? scaleFactor = null;
+		lock(this.clientStorage!.SaveLock)
+			if(this.Enabled && this.clientStorage.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk))
+				scaleFactor = 1 << mapChunk.ColorAndZoom.ZoomLevel;
 		if(player != null)
 			scaleFactor = MathUtil.Min(scaleFactor, MathUtil.Min(GetCompassScaleFactor(player.Entity.LeftHandItemSlot), GetCompassScaleFactor(player.Entity.RightHandItemSlot)));
 		return scaleFactor;

@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Updated parchment texture to be lighter.
 - Updated precise map texture and added light border.
 ### Fixed
-- A variable could be concurrently accessed from multiple threads when sending chunk redraw updates to GiMap mod.
+- Potential issues with accessing chunk map layer variables from multiple threads.
 - Regular compass recipe wasn't grouped in the handbook.
 
 ## [0.3.0] - 2026-01-20

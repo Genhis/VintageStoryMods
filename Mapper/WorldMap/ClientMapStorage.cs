@@ -15,9 +15,7 @@ public class ClientMapStorage {
 	public uint DataVersion;
 
 	/// <summary>
-	/// Always use this lock when writing to client storage.<br/>
-	/// When reading, use it only if you care about data integrity as a whole, not for accessing individual chunks.<br/>
-	/// Also use it when you iterate over the stored objects.
+	/// Always use this lock when reading from or writing to client storage.
 	/// </summary>
 	public readonly object SaveLock = new();
 
