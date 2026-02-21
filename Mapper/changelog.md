@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 ### Added
 - A **cartography table** for sharing mapped chunks with friends. Thank you [hutli](https://github.com/hutli) for the idea and its initial implementation. ([#6](https://github.com/Genhis/VintageStoryMods/pull/6))
+- A **papyrus sheet** paper variant. Its recipe is temporary and will be changed in the future.
+### Changed
+- Rebalanced map properties and changed primitive map recipe to use papyrus sheet.
+- Updated parchment texture to be lighter.
+- Updated precise map texture and added light border.
 ### Fixed
 - A variable could be concurrently accessed from multiple threads when sending chunk redraw updates to GiMap mod.
 

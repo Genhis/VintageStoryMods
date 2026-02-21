@@ -1,0 +1,6 @@
+[
+	{"file": "game:itemtypes/lore/paper", "op": "add", "path": "/variantgroups/0/states/-", "value": "papyrus"},
+	{"file": "game:itemtypes/lore/paper", "op": "add", "path": "/textures", "value": {
+		"labelbase": {"base": "mapper:item/paper-{type}"}
+	}}
+]
