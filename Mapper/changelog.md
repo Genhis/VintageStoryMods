@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Updated precise map texture and added light border.
 ### Fixed
 - A variable could be concurrently accessed from multiple threads when sending chunk redraw updates to GiMap mod.
+- Regular compass recipe wasn't grouped in the handbook.
 
 ## [0.3.0] - 2026-01-20
 ### Added
