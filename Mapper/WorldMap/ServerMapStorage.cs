@@ -42,6 +42,7 @@ public class ServerMapStorage : Dictionary<string, ServerPlayerMap> {
 				}
 			}
 			api.WorldManager.SaveGame.StoreData("mapper:mapregions", stream.ToArray());
+			logger.Notification($"Map regions saved and used {stream.Position / 1024.0:0.###} kB of space");
 			return true;
 		}
 		catch(Exception ex) {

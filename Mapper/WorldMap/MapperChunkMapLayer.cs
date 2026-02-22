@@ -53,7 +53,6 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		if(api is ICoreServerAPI sapi) {
 			this.serverStorage = [];
 			this.joiningPlayers = [];
-			this.startTime = sapi.WorldManager.SaveGame.GetData<int>("mapper:time");
 
 			sapi.Event.GameWorldSave += () => {
 				ICoreServerAPI sapi = (ICoreServerAPI)this.api;
@@ -92,6 +91,11 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			throw new InvalidOperationException("Another MapperChunkMapLayer instance is already loaded");
 		modSystem.mapLayer = this;
 		this.logger = modSystem.Mod.Logger;
+
+		if(this.api is ICoreServerAPI sapi) {
+			this.startTime = sapi.WorldManager.SaveGame.GetData<int>("mapper:time") - (int)(sapi.World.ElapsedMilliseconds / 1000);
+			this.logger.Notification("Loading chunk map layer, current time is " + this.CurrentTime);
+		}
 
 		if(!this.api.World.Config.GetBool("allowMap", true)) {
 			this.status = Status.DisabledMap;
@@ -168,7 +172,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 
 		string uid = player.PlayerUID;
 		if(this.joiningPlayers.Remove(uid)) {
-			this.logger.Notification($"Sending last known position to player {uid}");
+			this.logger.Notification("Sending current time and last known position to " + player.PlayerName);
 			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{
 				Mode = ServerToClientPacketMode.General,
 				LastKnownPosition = this.serverStorage!.GetOrCreate(uid).LastKnownPosition,
@@ -237,8 +241,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return;
 		}
 		if(packet.Changes == null) {
-			if(this.startTime == 0)
+			if(this.startTime == 0) {
 				this.startTime = packet.Time - this.elapsedSecondsAtStart;
+				this.logger.Notification($"Initialization packet received, current time is {this.CurrentTime} and last known position is {packet.LastKnownPosition?.ToString() ?? "<null>"}");
+			}
 
 			if(this.clientStorage!.DataVersion < ClientMapStorage.LatestServerMigrationVersion)
 				this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{
@@ -527,6 +533,11 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return false;
 		}
 
+		if(this.api.World.Claims.TestAccess(player, cartographyData.Position, EnumBlockAccessFlags.Use) != EnumWorldAccessResponse.Granted) {
+			this.logger.Audit($"{player.PlayerName} sent a synchronization packet for a cartography table at {cartographyData.Position} despite not having claim access, rejected");
+			return false;
+		}
+
 		if(cartographyTable.lastUpdateID != cartographyData.BlockUpdateID) {
 			player.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.GetL(player.LanguageCode, "mapper:error-cartographytable-outdated"), EnumChatType.Notification);
 			return false;
@@ -564,6 +575,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			},
 			null
 		);
+		this.dirty = true;
 		this.logger.Audit($"{player.PlayerName} downloaded {approvedChanges.Count} chunks from a cartography table at {cartographyData.Position} and used {result.UsedMapDurability} map pixels from '{result.UsedMapCode?.ToString() ?? "<null>"}' and {result.UsedPaintsetDurability} paintset pixels from '{result.UsedPaintsetCode?.ToString() ?? "<null>"}'");
 		this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Mode = ServerToClientPacketMode.ApplyPendingChanges, Chunks = approvedChanges}));
 		return true;
@@ -574,10 +586,14 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.logger.Warning("Received a cartography table synchronization packet when no changes were pending");
 			return;
 		}
+		if(approvedChanges.Count == 0) {
+			this.syncRequest = null; // Request denied.
+			return;
+		}
 
 		int missingChunks = 0;
 		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
-		lock(this.clientStorage!.SaveLock)
+		lock(this.clientStorage!.SaveLock) {
 			foreach(FastVec2i chunkPosition in approvedChanges) {
 				if(!this.syncRequest.PendingChanges.TryGetValue(chunkPosition, out MapChunk mapChunk)) {
 					++missingChunks;
@@ -587,6 +603,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 				this.clientStorage.Chunks[chunkPosition] = mapChunk;
 				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = chunkPosition, Pixels = mapChunk.Pixels});
 			}
+			this.dirty = true;
+		}
 
 		IClientPlayer player = ((ICoreClientAPI)this.api).World.Player;
 		int downloadedChunks = approvedChanges.Count - missingChunks;

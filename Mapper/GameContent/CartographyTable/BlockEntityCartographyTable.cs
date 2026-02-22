@@ -121,7 +121,7 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 		}
 
 		if(!this.Api.World.Claims.TryAccess(player, this.Pos, EnumBlockAccessFlags.Use)) {
-			this.Api.World.Logger.Audit("Player {0} sent a packet for a cartography table at {1} but has no claim access, rejected", player.PlayerName, this.Pos);
+			this.Api.World.Logger.Audit($"Player {player.PlayerName} sent a packet for a cartography table at {this.Pos} but has no claim access, rejected");
 			return;
 		}
 

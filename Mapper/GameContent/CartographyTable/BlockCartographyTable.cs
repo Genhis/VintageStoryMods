@@ -26,7 +26,7 @@ public class BlockCartographyTable : Block {
 
 		BlockPos secondPosition = position.AddCopy(side == "left" ? facing.GetCW() : facing.GetCCW());
 		Block secondBlock = world.BlockAccessor.GetBlock(secondPosition);
-		if(secondBlock is BlockCartographyTable && secondBlock.LastCodePart(1) != side)
+		if(secondBlock is BlockCartographyTable && secondBlock.LastCodePart(1) != side && secondBlock.LastCodePart() == facing.Code)
 			world.BlockAccessor.SetBlock(0, secondPosition);
 
 		base.OnBlockRemoved(world, position);

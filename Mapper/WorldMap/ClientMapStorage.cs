@@ -57,6 +57,7 @@ public class ClientMapStorage {
 				this.SaveInternal(output);
 				dirtyFlag = false;
 			}
+			logger.Notification("Client map storage saved");
 		}
 		catch(Exception ex) {
 			logger.Error("Failed to save client map storage: " + ex.ToString());

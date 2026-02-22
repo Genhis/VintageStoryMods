@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.4.0] - 2026-02-22
 ### Added
 - A **cartography table** for sharing mapped chunks with friends. Thank you [hutli](https://github.com/hutli) for the idea and its initial implementation. ([#6](https://github.com/Genhis/VintageStoryMods/pull/6))
 - A **papyrus sheet** paper variant. Its recipe is temporary and will be changed in the future.
@@ -47,3 +49,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 [0.1.0]: https://github.com/Genhis/VintageStoryMods/pull/2
 [0.2.0]: https://github.com/Genhis/VintageStoryMods/pull/4
 [0.3.0]: https://github.com/Genhis/VintageStoryMods/pull/5
+[0.4.0]: https://github.com/Genhis/VintageStoryMods/pull/7
