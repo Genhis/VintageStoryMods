@@ -25,12 +25,13 @@ public readonly struct MapRegion {
 			this.data[i].Save(output);
 	}
 
-	public readonly void PrepareClientRecovery(Dictionary<FastVec2i, ColorAndZoom> output, RegionPosition regionPosition) {
+	public readonly void PrepareClientRecovery(Dictionary<FastVec2i, ColorAndZoom> output, RegionPosition regionPosition, bool resetColor) {
 		int chunkOffsetX = regionPosition.X * Size;
 		int chunkOffsetY = regionPosition.Y * Size;
 		for(int i = 0; i < Area; ++i)
 			if(!this.data[i].Empty) {
-				this.data[i] = new ColorAndZoom(0, this.data[i].ZoomLevel); // Reset color level because we don't want players to cheat by corrupting their storage on purpose.
+				if(resetColor)
+					this.data[i] = new ColorAndZoom(0, this.data[i].ZoomLevel); // Reset color level because we don't want players to cheat by corrupting their storage on purpose.
 				output[new FastVec2i(chunkOffsetX + i % Size, chunkOffsetY + i / Size)] = this.data[i];
 			}
 	}

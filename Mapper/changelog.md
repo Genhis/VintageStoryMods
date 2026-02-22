@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-02-22
+### Added
+- A **cartography table** for sharing mapped chunks with friends. Thank you [hutli](https://github.com/hutli) for the idea and its initial implementation. ([#6](https://github.com/Genhis/VintageStoryMods/pull/6))
+- A **papyrus sheet** paper variant. Its recipe is temporary and will be changed in the future.
+### Changed
+- Rebalanced map properties and changed primitive map recipe to use papyrus sheet.
+- Updated parchment texture to be lighter.
+- Updated precise map texture and added light border.
+### Fixed
+- Potential issues with accessing chunk map layer variables from multiple threads.
+- Regular compass recipe wasn't grouped in the handbook.
+
 ## [0.3.0] - 2026-01-20
 ### Added
 - Basic support for [GiMap](https://mods.vintagestory.at/gimap) mod:
@@ -37,3 +49,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 [0.1.0]: https://github.com/Genhis/VintageStoryMods/pull/2
 [0.2.0]: https://github.com/Genhis/VintageStoryMods/pull/4
 [0.3.0]: https://github.com/Genhis/VintageStoryMods/pull/5
+[0.4.0]: https://github.com/Genhis/VintageStoryMods/pull/7

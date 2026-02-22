@@ -1,5 +1,5 @@
 # Mapper
-This mod adds map drawing mechanic (cartography) - the world map no longer updates automatically and costs resources. It serves as a nice balance between the hardcore mode (fully disabled map) and having the map always visible and updated.
+This mod adds map drawing mechanic (cartography) - the world map no longer updates automatically and costs resources. It serves as a nice balance between the hardcore mode (fully disabled map) and having the map always visible and updated. You can also share the map with friends using the cartography table.
 
 ## Features
 - **A handbook guide** to explain the mechanics.
@@ -13,6 +13,11 @@ This mod adds map drawing mechanic (cartography) - the world map no longer updat
 - **Drawing kit:**
   - A consumable item with durability; paints an area based on the selected tool mode. Lower-resolution maps use less durability.
   - Apart from the charcoal kit, it must be held in your left hand with a paintbrush in your right hand.
+- **Cartography table:**
+  - A workstation which stores mapped chunks and can be used to exchange information between players.
+  - Requires empty maps and drawing kits to copy stored chunks into the local map. Copying local chunks into the cartography table is free.
+  - Offers multiple modes to select which chunks should be copied, evaluated from top to bottom.
+  - Players must have use permission if the block is in a claimed area.
 
 ## Technical details
 - Mapper stores data both server-side and client-side. For each player, the server knows about all chunks where the map item was used, their resolution and their last-applied color. The client stores individual chunk pixels.
@@ -23,4 +28,4 @@ This mod adds map drawing mechanic (cartography) - the world map no longer updat
 
 ## Built-in mod compatibility
 - [Auto Map Markers](https://mods.vintagestory.at/automapmarkers)
-- [GiMap](https://mods.vintagestory.at/gimap) - You don't need to repaint the map to update layers from this mod.
+- [GiMap](https://mods.vintagestory.at/gimap) - You don't need to repaint the map to update layers from this mod and its layers are not stored in the cartography table.

@@ -1,0 +1,60 @@
+[
+	{
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "HCM,PPP,LNL",
+		"ingredients": {
+			"C": {"type": "item", "code": "game:chisel-*", "isTool": true, "toolDurabilityCost": 50},
+			"H": {"type": "item", "code": "game:hammer-*", "isTool": true, "toolDurabilityCost": 80},
+			"L": {"type": "block", "code": "game:log-placed-*-ud"},
+			"M": {"type": "item", "code": "map-primitive-*", "quantity": 4},
+			"N": {"type": "item", "code": "game:metalnailsandstrips-*"},
+			"P": {"type": "item", "code": "game:plank-*", "quantity": 2}
+		},
+		"output": {"type": "block", "code": "cartographytable-oak-left-north"}
+	},
+	{
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "HCM,PPP,LNL",
+		"ingredients": {
+			"C": {"type": "item", "code": "game:chisel-*", "isTool": true, "toolDurabilityCost": 50},
+			"H": {"type": "item", "code": "game:hammer-*", "isTool": true, "toolDurabilityCost": 80},
+			"L": {"type": "block", "code": "game:logsection-placed-*-ud"},
+			"M": {"type": "item", "code": "map-primitive-*", "quantity": 4},
+			"N": {"type": "item", "code": "game:metalnailsandstrips-*"},
+			"P": {"type": "item", "code": "game:plank-*", "quantity": 2}
+		},
+		"output": {"type": "block", "code": "cartographytable-oak-left-north"}
+	},
+	{
+		"recipeGroup": 1,
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "HCM,PPP,LNL",
+		"ingredients": {
+			"C": {"type": "item", "code": "game:chisel-*", "isTool": true, "toolDurabilityCost": 50},
+			"H": {"type": "item", "code": "game:hammer-*", "isTool": true, "toolDurabilityCost": 80},
+			"L": {"type": "block", "code": "game:log-placed-*-ud"},
+			"M": {"type": "item", "code": "map-precise-*"},
+			"N": {"type": "item", "code": "game:metalnailsandstrips-*"},
+			"P": {"type": "item", "code": "game:plank-*", "quantity": 2}
+		},
+		"output": {"type": "block", "code": "cartographytable-oak-left-north"}
+	},
+	{
+		"recipeGroup": 1,
+		"width": 3,
+		"height": 3,
+		"ingredientPattern": "HCM,PPP,LNL",
+		"ingredients": {
+			"C": {"type": "item", "code": "game:chisel-*", "isTool": true, "toolDurabilityCost": 50},
+			"H": {"type": "item", "code": "game:hammer-*", "isTool": true, "toolDurabilityCost": 80},
+			"L": {"type": "block", "code": "game:logsection-placed-*-ud"},
+			"M": {"type": "item", "code": "map-precise-*"},
+			"N": {"type": "item", "code": "game:metalnailsandstrips-*"},
+			"P": {"type": "item", "code": "game:plank-*", "quantity": 2}
+		},
+		"output": {"type": "block", "code": "cartographytable-oak-left-north"}
+	}
+]

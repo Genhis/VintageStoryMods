@@ -9,8 +9,8 @@
 	"maxstacksize": 64,
 	"attributes": {
 		"mapper": {
+			"type": "map",
 			"colorLevel": 1,
-			"maxZoomLevel": 5,
 			"interactionData": {
 				"duration": 1.5,
 				"animationName": "holdbothhandslarge",
@@ -20,15 +20,30 @@
 		},
 		"mapperByType": {
 			"*-primitive-*": {
-				"mapChunkCount": 256,
-				"minZoomLevel": 3
+				"mapChunkCount": 64,
+				"minZoomLevel": 3,
+				"maxZoomLevel": 5
 			},
 			"*": {
 				"mapChunkCount": 64,
-				"minZoomLevel": 1
+				"minZoomLevel": 1,
+				"maxZoomLevel": 4
 			}
 		}
 	},
+	"behaviors": [
+		{
+			"name": "MapperCartographyTableDisplay",
+			"properties": {
+				"shapes": [
+					{"base": "block/attachment/cartographytable-map", "quantityElements": 5},
+					{"base": "block/attachment/cartographytable-map", "quantityElements": 8},
+					{"base": "block/attachment/cartographytable-map", "quantityElements": 11},
+					{"base": "block/attachment/cartographytable-map"}
+				]
+			}
+		}
+	],
 	"shape": {"base": "item/map"},
 	"textures": {"map": {"base": "item/map-{tier}"}},
 	"guiTransform": {

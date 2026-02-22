@@ -22,10 +22,13 @@ internal static class AMapLayer {
 
 	[DynamicHarmonyPatch("OnLoaded")]
 	[HarmonyPostfix]
-	internal static void OnLoaded(MapLayer __instance, ICoreAPI ___api, UniqueQueue<FastVec2i> ____chunksToGen) {
+	internal static void OnLoaded(MapLayer __instance, ICoreAPI ___api, UniqueQueue<FastVec2i> ____chunksToGen, object ____chunksToGenLock) {
 		MapperChunkMapLayer mapperLayer = MapperChunkMapLayer.GetInstance(___api);
 		lock(mapperLayer.OnChunkChanged)
-			mapperLayer.OnChunkChanged[__instance] = ____chunksToGen.Enqueue;
+			mapperLayer.OnChunkChanged[__instance] = chunkPosition => {
+				lock(____chunksToGenLock)
+					____chunksToGen.Enqueue(chunkPosition);
+			};
 	}
 
 	[DynamicHarmonyPatch("OnShutDown")]
@@ -85,7 +88,7 @@ internal static class AMapLayer {
 		]).ThrowIfInvalid("Could not find `AMapLayer.OnOffThreadTick()::cord`").Instruction;
 
 		// Find https://github.com/GinoxXP/gi-map/blob/b4e647d54b2532f4daa065dac7c64504a3e619a7/GiMap/Client/AMapLayer.cs#L223
-		// Append `|| !GiMap.HasChunk(this.api, cord)` to the condition
+		// Append `|| !Mapper.Patches.Mods.GiMap.AMapLayer.HasChunk(this.api, cord)` to the condition
 		CodeInstruction skipChunk = matcher.MatchEndForward([
 			new(OpCodes.Callvirt, typeof(IBlockAccessor).GetCheckedMethod("IsValidPos", BindingFlags.Instance, [typeof(int), typeof(int), typeof(int)])),
 			new(OpCodes.Brfalse),

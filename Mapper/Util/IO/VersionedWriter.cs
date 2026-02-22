@@ -6,7 +6,7 @@ using System.IO;
 using System.IO.Compression;
 
 public class VersionedWriter : BufferedWriter {
-	public const uint OutputVersion = 0;
+	public const uint OutputVersion = 2;
 
 	protected VersionedWriter(Stream stream, int bufferSize, bool leaveOpen) : base(stream, bufferSize, leaveOpen) {}
 

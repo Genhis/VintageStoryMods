@@ -29,10 +29,10 @@ public class ServerPlayerMap {
 		output.WriteOptional(this.LastKnownPosition);
 	}
 
-	public Dictionary<FastVec2i, ColorAndZoom> PrepareClientRecovery() {
+	public Dictionary<FastVec2i, ColorAndZoom> PrepareClientRecovery(bool resetColor) {
 		Dictionary<FastVec2i, ColorAndZoom> result = [];
 		foreach(KeyValuePair<RegionPosition, MapRegion> item in this.Regions)
-			item.Value.PrepareClientRecovery(result, item.Key);
+			item.Value.PrepareClientRecovery(result, item.Key, resetColor);
 		return result;
 	}
 }

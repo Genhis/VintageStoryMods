@@ -11,6 +11,7 @@
 	"storageFlags": 257,
 	"attributes": {
 		"mapper": {
+			"type": "paintset",
 			"colorLevelByType": {
 				"*-vintage": 2,
 				"*-colorful": 3
@@ -26,6 +27,12 @@
 					"x1": 0, "y1": 0, "z1": 0,
 					"x2": 1, "y2": 0.1, "z2": 1
 				}
+			}
+		},
+		{
+			"name": "MapperCartographyTableDisplay",
+			"properties": {
+				"shapes": [{"base": "block/attachment/cartographytable-painters-palette"}]
 			}
 		}
 	],

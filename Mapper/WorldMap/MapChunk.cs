@@ -9,24 +9,26 @@ public readonly struct MapChunk {
 	public const int Area = Size * Size;
 
 	public readonly int[] Pixels;
-	private readonly ColorAndZoom modeAndZoom;
+	public readonly int Timestamp;
+	public readonly ColorAndZoom ColorAndZoom;
 
-	public readonly byte ZoomLevel => this.modeAndZoom.ZoomLevel;
-
-	public MapChunk(int[] pixels, byte zoomLevel, bool unexplored) {
+	public MapChunk(int[] pixels, int timestamp, ColorAndZoom colorAndZoom) {
 		this.Pixels = pixels;
-		this.modeAndZoom = new ColorAndZoom(unexplored ? (byte)0 : (byte)1, zoomLevel);
+		this.Timestamp = timestamp;
+		this.ColorAndZoom = colorAndZoom;
 	}
 
 	public MapChunk(VersionedReader input, FastVec2i chunkPosition, MapBackground background) {
-		this.modeAndZoom = new(input);
-		if(this.modeAndZoom.Color == 0) {
-			this.Pixels = background.GetPixels(chunkPosition, this.ZoomLevel);
+		this.ColorAndZoom = new(input);
+		if(this.ColorAndZoom.Color == 0) {
+			this.Pixels = background.GetPixels(chunkPosition, this.ColorAndZoom.ZoomLevel);
 			return;
 		}
 
+		if(input.InputVersion >= 2)
+			this.Timestamp = input.ReadInt32();
 		this.Pixels = new int[MapChunk.Area];
-		int scaleFactor = 1 << this.ZoomLevel;
+		int scaleFactor = 1 << this.ColorAndZoom.ZoomLevel;
 		for(int y = 0; y < MapChunk.Size; y += scaleFactor)
 			for(int x = 0; x < MapChunk.Size; x += scaleFactor) {
 				int pixel = input.ReadInt32();
@@ -39,15 +41,30 @@ public readonly struct MapChunk {
 	}
 
 	public readonly void Save(VersionedWriter output) {
-		this.modeAndZoom.Save(output);
-		if(this.modeAndZoom.Color == 0)
+		this.ColorAndZoom.Save(output);
+		if(this.ColorAndZoom.Color == 0)
 			return;
 
-		int scaleFactor = 1 << this.ZoomLevel;
+		output.Write(this.Timestamp);
+		int scaleFactor = 1 << this.ColorAndZoom.ZoomLevel;
 		for(int y = 0; y < MapChunk.Size; y += scaleFactor) {
 			int rowOffset = y * MapChunk.Size;
 			for(int x = 0; x < MapChunk.Size; x += scaleFactor)
 				output.Write(this.Pixels[rowOffset + x]);
 		}
 	}
+
+	/// <returns>True if this chunk is better than the other.</returns>
+	public readonly bool IsBetterThan(in MapChunk other, CartographyTableSyncModes modes) {
+		if(modes.HasFlag(CartographyTableSyncModes.MoreRecent) && this.Timestamp != other.Timestamp)
+			return this.Timestamp > other.Timestamp;
+		if(modes.HasFlag(CartographyTableSyncModes.BetterResolution) && this.ColorAndZoom.ZoomLevel != other.ColorAndZoom.ZoomLevel)
+			return this.ColorAndZoom.ZoomLevel < other.ColorAndZoom.ZoomLevel;
+		if(modes.HasFlag(CartographyTableSyncModes.BetterColor) && this.ColorAndZoom.Color != other.ColorAndZoom.Color)
+			return this.ColorAndZoom.Color > other.ColorAndZoom.Color;
+		return false;
+	}
+
+	public static int GetAvailablePixels(int chunkCount, byte minZoomLevel) => chunkCount * MapChunk.Area / (1 << (minZoomLevel * 2));
+	public static int GetRequiredDurability(byte zoomLevel) => MapChunk.Area >> (zoomLevel * 2);
 }

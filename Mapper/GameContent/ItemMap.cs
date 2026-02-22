@@ -1,4 +1,4 @@
-namespace Mapper.Items;
+namespace Mapper.GameContent;
 
 using Mapper.Util;
 using Mapper.WorldMap;
@@ -16,10 +16,28 @@ public class ItemMap : Item {
 	private readonly ItemInteractionData interactionData = new();
 	private SkillItem[]? toolModes;
 	private int chunkCount;
-	private byte colorLevel;
-	private int minZoomLevel;
-	private int availablePixels;
 	private int toolModeCount;
+
+	public readonly struct CustomAttributes(int availablePixels, byte colorLevel, byte minZoomLevel, byte maxZoomLevel) {
+		public readonly int AvailablePixels = availablePixels;
+		public readonly byte ColorLevel = colorLevel;
+		public readonly byte MinZoomLevel = minZoomLevel;
+		public readonly byte MaxZoomLevel = maxZoomLevel;
+
+		public CustomAttributes() : this(0, 0, 0, 0) {}
+		public CustomAttributes(ITreeAttribute input) : this(input.GetInt("availablePixels"), (byte)input.GetInt("colorLevel"), (byte)input.GetInt("minZoomLevel"), (byte)input.GetInt("maxZoomLevel")) {}
+
+		public readonly void Save(ITreeAttribute output) {
+			output.SetInt("availablePixels", this.AvailablePixels);
+			output.SetInt("colorLevel", this.ColorLevel);
+			output.SetInt("minZoomLevel", this.MinZoomLevel);
+			output.SetInt("maxZoomLevel", this.MaxZoomLevel);
+		}
+
+		public readonly bool CanMergeWith(in CustomAttributes other) => this.ColorLevel == other.ColorLevel && this.MinZoomLevel == other.MinZoomLevel && this.MaxZoomLevel == other.MaxZoomLevel;
+		public readonly CustomAttributes WithAvailablePixels(int availablePixels) => new(availablePixels, this.ColorLevel, this.MinZoomLevel, this.MaxZoomLevel);
+	}
+	public CustomAttributes MapAttributes { get; private set; }
 
 	public override void OnLoaded(ICoreAPI api) {
 		base.OnLoaded(api);
@@ -28,21 +46,21 @@ public class ItemMap : Item {
 		ILogger logger = api.Logger;
 		this.interactionData.OnLoaded(this, input["interactionData"]);
 		this.chunkCount = input.GetIntInRange(logger, "mapChunkCount", 0, 0, 1 << 16);
-		this.colorLevel = (byte)input.GetIntInRange(logger, "colorLevel", 0, 0, 3);
-		this.minZoomLevel = input.GetIntInRange(logger, "minZoomLevel", 1, 1, 6);
-		int maxZoomLevel = input.GetIntInRange(logger, "maxZoomLevel", this.minZoomLevel, this.minZoomLevel, 6);
+		byte colorLevel = ItemPaintset.GetColorLevel(input, logger);
+		byte minZoomLevel = (byte)input.GetIntInRange(logger, "minZoomLevel", 1, 1, 6);
+		byte maxZoomLevel = (byte)(input.GetIntInRange(logger, "maxZoomLevel", minZoomLevel, minZoomLevel, 6) - 1);
+		--minZoomLevel;
 
-		--this.minZoomLevel;
-		this.availablePixels = this.chunkCount * 1024 / (1 << (this.minZoomLevel * 2));
-		this.toolModeCount = maxZoomLevel - this.minZoomLevel;
+		this.toolModeCount = maxZoomLevel - minZoomLevel + 1;
+		this.MapAttributes = new CustomAttributes(MapChunk.GetAvailablePixels(this.chunkCount, minZoomLevel), colorLevel, minZoomLevel, maxZoomLevel);
 		if(api is not ICoreClientAPI capi)
 			return;
 
 		this.toolModes = new SkillItem[this.toolModeCount];
 		List<SkillItem?> toolModes = ObjectCacheUtil.GetOrCreate(api, "mapper::mapToolModes", () => new List<SkillItem?>());
-		toolModes.Resize(maxZoomLevel);
-		for(int i = this.minZoomLevel; i < maxZoomLevel; ++i)
-			this.toolModes[i - this.minZoomLevel] = toolModes.GetOrCreateWithNumber(capi, i, "mapper:toolmode-map-scale", 1 << i, 1 << (i * 2), $"mapper:textures/icons/toolmode/map-zoom-{Math.Min(i + 1, 5)}.svg");
+		toolModes.ResizeIfSmaller(maxZoomLevel + 1);
+		for(byte i = minZoomLevel; i <= maxZoomLevel; ++i)
+			this.toolModes[i - minZoomLevel] = toolModes.GetOrCreateWithNumber(capi, i, "mapper:toolmode-map-scale", 1 << i, 1 << (i * 2), $"mapper:textures/icons/toolmode/map-zoom-{Math.Min(i + 1, 5)}.svg");
 	}
 
 	public override void OnUnloaded(ICoreAPI api) {
@@ -80,10 +98,9 @@ public class ItemMap : Item {
 		if(byEntity is not EntityPlayer{Player: IServerPlayer player})
 			return;
 
-		if(MapperChunkMapLayer.GetInstance(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), int.MaxValue, this.availablePixels, this.colorLevel, (byte)(this.GetToolMode(slot, player, blockSel) + this.minZoomLevel)) == this.availablePixels)
-			return;
-		slot.TakeOut(1);
-		slot.MarkDirty();
+		CustomAttributes attributes = this.MapAttributes;
+		if(MapperChunkMapLayer.GetInstance(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), int.MaxValue, attributes.AvailablePixels, attributes.ColorLevel, (byte)(this.GetToolMode(slot, player, blockSel) + attributes.MinZoomLevel)) != attributes.AvailablePixels)
+			slot.TakeOutAndMarkDirty(1);
 	}
 
 	public override void SetToolMode(ItemSlot slot, IPlayer player, BlockSelection selection, int toolMode) {
@@ -103,9 +120,9 @@ public class ItemMap : Item {
 
 		StringBuilder chunkCount = new();
 		StringBuilder scales = new();
-		int maxZoomLevel = this.minZoomLevel + this.toolModeCount;
-		for(int i = this.minZoomLevel; i < maxZoomLevel; ++i) {
-			chunkCount.Append(this.availablePixels / (1024 >> (i * 2))).Append(", ");
+		CustomAttributes attributes = this.MapAttributes;
+		for(byte i = attributes.MinZoomLevel; i <= attributes.MaxZoomLevel; ++i) {
+			chunkCount.Append(attributes.AvailablePixels / MapChunk.GetRequiredDurability(i)).Append(", ");
 			scales.Append("1:").Append(1 << i).Append(", ");
 		}
 
