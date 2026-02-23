@@ -28,4 +28,5 @@ This mod adds map drawing mechanic (cartography) - the world map no longer updat
 
 ## Built-in mod compatibility
 - [Auto Map Markers](https://mods.vintagestory.at/automapmarkers)
+- [Geology Map](https://mods.vintagestory.at/geologymap) - You don't need to repaint the map to update layers from this mod and its layers are not stored in the cartography table.
 - [GiMap](https://mods.vintagestory.at/gimap) - You don't need to repaint the map to update layers from this mod and its layers are not stored in the cartography table.
