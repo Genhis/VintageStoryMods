@@ -31,7 +31,7 @@ public class BehaviorCompassNeedle : CollectibleBehavior {
 		if(item.Shape == null)
 			return; // The server hasn't sent any shape information yet. It doesn't matter, the changes should already be applied when the shape is received.
 
-		CompositeShape needleShape = properties["needleShape"].AsObject<CompositeShape>();
+		CompositeShape? needleShape = properties["needleShape"].AsObject<CompositeShape>();
 		if(needleShape == null) {
 			this.error = "Property 'needleShape' of MapperCompassNeedle behavior does not exist";
 			this.Resolution = 0;

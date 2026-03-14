@@ -31,19 +31,26 @@ internal static class ChunkMapLayerPatch {
 		]);
 
 		// Find https://github.com/anegostudios/vsessentialsmod/blob/b447263a4860f52d92fd29f800f3f1fd8e905c6a/Systems/WorldMap/ChunkLayer/ChunkMapLayer.cs#L114
-		// Append `& this is not MapperChunkMapLayer` to the condition
-		matcher.MatchEndForward([
+		// Remember skip label
+		object skipClientMapLoading = matcher.MatchEndForward([
 			new(OpCodes.Callvirt, typeof(ICoreAPI).GetCheckedProperty("Side", BindingFlags.Instance).CheckedGetMethod()),
 			new(OpCodes.Ldc_I4_2),
 			new(OpCodes.Bne_Un),
-		]).ThrowIfInvalid("Could not find `if(api.Side == EnumAppSide.Client)` in `ChunkMapLayer..ctor()` to patch").InsertAndAdvance([
-			new(OpCodes.Ceq),
+		]).ThrowIfInvalid("Could not find `if(api.Side == EnumAppSide.Client)` in `ChunkMapLayer..ctor()`").Instruction.operand;
+
+		// Find https://github.com/anegostudios/vsessentialsmod/blob/0dcba6c6ec636e20dbcab6d76c8514fbed282fb3/Systems/WorldMap/ChunkLayer/ChunkMapLayer.cs#L121
+		// Prepend `if(this is MapperChunkMapLayer) goto skipClientMapLoading;`
+		matcher.MatchStartForward([
+			new(OpCodes.Ldarg_1),
+			new(OpCodes.Callvirt, typeof(ICoreAPI).GetCheckedProperty("World", BindingFlags.Instance).CheckedGetMethod()),
+			new(OpCodes.Callvirt, typeof(IWorldAccessor).GetCheckedProperty("Logger", BindingFlags.Instance).CheckedGetMethod()),
+			new(OpCodes.Ldstr),
+			new(OpCodes.Callvirt, typeof(ILogger).GetCheckedMethod("Notification", BindingFlags.Instance, [typeof(string)])),
+		]).ThrowIfInvalid("Could not find 'Loading world map cache db' log entry in `ChunkMapLayer..ctor()` to patch").InsertAndAdvance([
 			new(OpCodes.Ldarg_0),
 			new(OpCodes.Isinst, typeof(MapperChunkMapLayer)),
-			new(OpCodes.Ldnull),
-			new(OpCodes.Ceq),
-			new(OpCodes.And),
-		]).SetOpcodeAndAdvance(OpCodes.Brfalse);
+			new(OpCodes.Brtrue, skipClientMapLoading),
+		]);
 
 		return matcher.InstructionEnumeration();
 	}

@@ -88,7 +88,7 @@ public class ItemPaintbrush : Item {
 		if(byEntity is not EntityPlayer{Player: IServerPlayer player})
 			return;
 
-		ItemStack paintsetStack = slotAndColor.Slot.Itemstack;
+		ItemStack paintsetStack = slotAndColor.Slot.Itemstack!;
 		int oldAvailablePixels = ItemPaintset.GetAvailablePixels(paintsetStack);
 		int mode = this.GetToolMode(slot, player, blockSel);
 		int newAvailablePixels = MapperChunkMapLayer.GetInstance(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), mode % this.rangeCount * this.stepRange + this.minRange, oldAvailablePixels, slotAndColor.ColorLevel, ColorAndZoom.EmptyZoomLevel, !this.hasUpgradeMode || mode >= this.rangeCount);
@@ -96,11 +96,11 @@ public class ItemPaintbrush : Item {
 	}
 
 	public override void SetToolMode(ItemSlot slot, IPlayer player, BlockSelection selection, int toolMode) {
-		slot.Itemstack.Attributes.SetInt("toolMode", toolMode);
+		slot.Itemstack!.Attributes.SetInt("toolMode", toolMode);
 	}
 
 	public override int GetToolMode(ItemSlot slot, IPlayer player, BlockSelection selection) {
-		return Math.Min(this.toolModeCount - 1, slot.Itemstack.Attributes.GetInt("toolMode"));
+		return Math.Min(this.toolModeCount - 1, slot.Itemstack!.Attributes.GetInt("toolMode"));
 	}
 
 	public override SkillItem[]? GetToolModes(ItemSlot slot, IClientPlayer player, BlockSelection selection) {
@@ -136,7 +136,7 @@ public class ItemPaintbrush : Item {
 public static class ItemPaintset {
 	public static void DamageItem(IWorldAccessor world, EntityAgent? byEntity, ItemSlot slot, int oldAvailablePixels, int newAvailablePixels) {
 		int realDamage = (oldAvailablePixels - newAvailablePixels) / MapChunk.Area;
-		slot.Itemstack.Attributes.SetInt("fractionalDurability", newAvailablePixels % MapChunk.Area);
+		slot.Itemstack!.Attributes.SetInt("fractionalDurability", newAvailablePixels % MapChunk.Area);
 		if(realDamage > 0)
 			slot.Itemstack.Collectible.DamageItem(world, byEntity, slot, realDamage);
 	}

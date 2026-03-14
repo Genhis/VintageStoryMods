@@ -69,7 +69,8 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 		}
 	}
 
-	private void Dispose() {
+	protected override void Dispose() {
+		base.Dispose();
 		if(this.guiDialog != null) {
 			this.guiDialog.TryClose();
 			System.Diagnostics.Debug.Assert(this.guiDialog == null);

@@ -15,8 +15,8 @@ public class BlockCartographyTable : Block {
 		if(!this.CanPlaceBlock(world, player, secondSelection, ref failureCode))
 			return false;
 
-		world.GetBlock(this.CodeWithParts("left", facing.Code)).DoPlaceBlock(world, player, selection, stack);
-		world.GetBlock(this.CodeWithParts("right", facing.Code)).DoPlaceBlock(world, player, secondSelection, stack);
+		world.GetBlock(this.CodeWithParts("left", facing.Code))!.DoPlaceBlock(world, player, selection, stack);
+		world.GetBlock(this.CodeWithParts("right", facing.Code))!.DoPlaceBlock(world, player, secondSelection, stack);
 		return true;
 	}
 
@@ -69,7 +69,7 @@ public class BlockCartographyTable : Block {
 	public override string GetPlacedBlockInfo(IWorldAccessor world, BlockPos position, IPlayer player) {
 		if(this.EntityClass != null)
 			return base.GetPlacedBlockInfo(world, position, player);
-		return world.GetBlock(this.CodeWithParts("left", this.LastCodePart())).GetPlacedBlockInfo(world, this.GetBlockEntityPosition(position), player);
+		return world.GetBlock(this.CodeWithParts("left", this.LastCodePart()))!.GetPlacedBlockInfo(world, this.GetBlockEntityPosition(position), player);
 	}
 
 	public override WorldInteraction[] GetPlacedBlockInteractionHelp(IWorldAccessor world, BlockSelection selection, IPlayer player) {
