@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-03-29
+### Added
+- Russian localization (contributed by Wafflz).
+### Fixed
+- Potential issues with accessing cartography table variables from multiple threads when trying to synchronize data.
+- Cartography table upload packet could become too large and the server would reject it.
+
 ## [0.4.0] - 2026-02-22
 ### Added
 - A **cartography table** for sharing mapped chunks with friends. Thank you [hutli](https://github.com/hutli) for the idea and its initial implementation. ([#6](https://github.com/Genhis/VintageStoryMods/pull/6))
@@ -50,3 +57,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 [0.2.0]: https://github.com/Genhis/VintageStoryMods/pull/4
 [0.3.0]: https://github.com/Genhis/VintageStoryMods/pull/5
 [0.4.0]: https://github.com/Genhis/VintageStoryMods/pull/7
+[0.4.1]: https://github.com/Genhis/VintageStoryMods/pull/10
