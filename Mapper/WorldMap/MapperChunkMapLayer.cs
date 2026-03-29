@@ -455,35 +455,39 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			return false;
 
 		bool isDownload = this.syncRequest.TransferDirection == TransferDirection.Download;
-		int blockUpdateID = cartographyTable.lastUpdateID;
+		int blockUpdateID;
+		int ignoredChunkCount = 0;
 		MapChunks newChunks;
 		Dictionary<FastVec2i, byte>? currentZoomLevels = null;
-		lock(this.clientStorage!.SaveLock) {
-			if(isDownload) {
-				newChunks = this.clientStorage.Chunks.FindBetter(cartographyTable.Chunks, this.syncRequest.Modes);
-				currentZoomLevels = [];
-				foreach(KeyValuePair<FastVec2i, MapChunk> item in newChunks)
-					if(this.clientStorage.Chunks.TryGetValue(item.Key, out MapChunk mapChunk))
-						currentZoomLevels[item.Key] = mapChunk.ColorAndZoom.ZoomLevel;
+		Dictionary<FastVec2i, ColorAndZoom>? requestedChunks = null;
+		lock(cartographyTable.SaveLock) {
+			blockUpdateID = cartographyTable.lastUpdateID;
+			lock(this.clientStorage!.SaveLock) {
+				if(isDownload) {
+					newChunks = this.clientStorage.Chunks.FindBetter(cartographyTable.Chunks, this.syncRequest.Modes);
+					currentZoomLevels = [];
+					foreach(KeyValuePair<FastVec2i, MapChunk> item in newChunks)
+						if(this.clientStorage.Chunks.TryGetValue(item.Key, out MapChunk mapChunk))
+							currentZoomLevels[item.Key] = mapChunk.ColorAndZoom.ZoomLevel;
+				}
+				else
+					newChunks = cartographyTable.Chunks.FindBetter(this.clientStorage.Chunks, this.syncRequest.Modes);
 			}
-			else
-				newChunks = cartographyTable.Chunks.FindBetter(this.clientStorage.Chunks, this.syncRequest.Modes);
+
+			if(isDownload) {
+				requestedChunks = [];
+				cartographyTable.ProcessChunks(
+					newChunks.ConvertToServerFormat(),
+					chunkPosition => currentZoomLevels!.GetValueOrDefault(chunkPosition, ColorAndZoom.EmptyZoomLevel),
+					(chunkPosition, colorAndZoom) => requestedChunks[chunkPosition] = colorAndZoom,
+					chunkPosition => {
+						newChunks.Remove(chunkPosition);
+						++ignoredChunkCount;
+					}
+				);
+			}
 		}
 
-		Dictionary<FastVec2i, ColorAndZoom>? requestedChunks = null;
-		int ignoredChunkCount = 0;
-		if(isDownload) {
-			requestedChunks = [];
-			cartographyTable.ProcessChunks(
-				newChunks.ConvertToServerFormat(),
-				chunkPosition => currentZoomLevels!.GetValueOrDefault(chunkPosition, ColorAndZoom.EmptyZoomLevel),
-				(chunkPosition, colorAndZoom) => requestedChunks[chunkPosition] = colorAndZoom,
-				chunkPosition => {
-					newChunks.Remove(chunkPosition);
-					++ignoredChunkCount;
-				}
-			);
-		}
 		if(newChunks.Count == 0) {
 			if(ignoredChunkCount != 0)
 				this.api.Event.EnqueueMainThreadTask(() => {

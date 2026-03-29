@@ -13,6 +13,7 @@ using Vintagestory.GameContent;
 
 public class BlockEntityCartographyTable : BlockEntityContainer {
 	public readonly MapChunks Chunks = [];
+	public readonly object SaveLock = new();
 	internal int lastUpdateID;
 	private ItemMap.CustomAttributes mapAttributes;
 
@@ -29,19 +30,21 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 	public override void FromTreeAttributes(ITreeAttribute tree, IWorldAccessor world) {
 		base.FromTreeAttributes(tree, world);
 
-		ITreeAttribute? mapAttributes = tree.GetTreeAttribute("mapAttributes");
-		this.mapAttributes = mapAttributes == null ? new() : new(mapAttributes);
+		lock(this.SaveLock) {
+			ITreeAttribute? mapAttributes = tree.GetTreeAttribute("mapAttributes");
+			this.mapAttributes = mapAttributes == null ? new() : new(mapAttributes);
 
-		this.lastUpdateID = tree.GetInt("lastUpdateID");
-		this.Chunks.Clear();
-		byte[]? chunksData = tree.GetBytesLarge("chunks");
-		try {
-			if(chunksData != null)
-				this.Chunks.FromBytes(chunksData, null!); // Cartography table doesn't store unexplored chunks, so background is not necessary.
-		}
-		catch(Exception ex) {
-			world.Api.Logger.Error("[mapper] Failed to load cartography table data:\n" + ex.ToString());
+			this.lastUpdateID = tree.GetInt("lastUpdateID");
 			this.Chunks.Clear();
+			byte[]? chunksData = tree.GetBytesLarge("chunks");
+			try {
+				if(chunksData != null)
+					this.Chunks.FromBytes(chunksData, null!); // Cartography table doesn't store unexplored chunks, so background is not necessary.
+			}
+			catch(Exception ex) {
+				world.Api.Logger.Error("[mapper] Failed to load cartography table data:\n" + ex.ToString());
+				this.Chunks.Clear();
+			}
 		}
 		this.guiDialog?.UpdateChunkCount(this.Chunks.Count);
 	}
