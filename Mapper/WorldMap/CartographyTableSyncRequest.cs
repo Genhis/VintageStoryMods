@@ -21,5 +21,6 @@ public class CartographyTableSyncRequest(BlockPos position, CartographyTableSync
 	public MapChunks? PendingChanges;
 	public int IgnoredChunkCount;
 	public int UploadedChunkCount;
+	public int OverLimitChunkCount;
 	public bool Prepared;
 }

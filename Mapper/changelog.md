@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 ### Fixed
 - Potential issues with accessing cartography table variables from multiple threads when trying to synchronize data.
+- Cartography table upload packet could become too large and the server would reject it.
 
 ## [0.4.0] - 2026-02-22
 ### Added

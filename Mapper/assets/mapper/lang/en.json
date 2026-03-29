@@ -6,6 +6,7 @@
 	"commandresult-cartographytable-download": "Copied {p0:# chunks|# chunk|# chunks} from the Cartography table.",
 	"commandresult-cartographytable-ignored": "{p0:# chunks were|# chunk was|# chunks were} ignored due to having different properties than the map or the drawing kit can support.",
 	"commandresult-cartographytable-upload": "Stored {p0:# chunks|# chunk|# chunks} in the Cartography table.",
+	"commandresult-cartographytable-upload-interrupted": "{p0:# chunks weren't|# chunk wasn't|# chunks weren't} sent due to the server limit. Press \"Upload\" again if you want to send more.",
 	"commandresult-mapper-restore-client-error": "Mapper mod doesn't have any corrupted data on the client.",
 	"commandresult-mapper-restore-client-request-response": "Ok, Mapper mod enabled on the client.",
 	"commandresult-mapper-restore-client-success": "Ok, a request to restore your data was sent to the server.",

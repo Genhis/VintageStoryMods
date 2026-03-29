@@ -461,6 +461,14 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		Dictionary<FastVec2i, byte>? currentZoomLevels = null;
 		Dictionary<FastVec2i, ColorAndZoom>? requestedChunks = null;
 		lock(cartographyTable.SaveLock) {
+			if(cartographyTable.expectUpdate) {
+				this.api.Event.EnqueueMainThreadTask(() => {
+					((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:error-cartographytable-sync-pending"));
+				}, null);
+				return false;
+			}
+
+			cartographyTable.expectUpdate = true;
 			blockUpdateID = cartographyTable.lastUpdateID;
 			lock(this.clientStorage!.SaveLock) {
 				if(isDownload) {
@@ -509,9 +517,10 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.syncRequest.PreparedPacket = new ClientCartographyTableData{
 				Position = this.syncRequest.Position,
 				BlockUpdateID = blockUpdateID,
-				UploadedChunks = isDownload ? null : newChunks.ToBytes(),
+				UploadedChunks = isDownload ? null : newChunks.ToBytesWithSizeLimit(1000000 - 1024, out this.syncRequest.OverLimitChunkCount),
 				RequestedChunks = requestedChunks,
 			};
+			this.syncRequest.UploadedChunkCount -= this.syncRequest.OverLimitChunkCount;
 		}
 		catch(Exception ex) {
 			this.logger.Error("Failed to save new chunks for synchronization with the server:\n" + ex.ToString());
@@ -525,6 +534,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = player.PlayerUID, CartographyTableData = this.syncRequest!.PreparedPacket}));
 		if(this.syncRequest.UploadedChunkCount != 0)
 			player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-upload", this.syncRequest.UploadedChunkCount));
+		if(this.syncRequest.OverLimitChunkCount != 0)
+			player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-upload-interrupted", this.syncRequest.OverLimitChunkCount));
 
 		this.syncRequest.PreparedPacket = null;
 		if(this.syncRequest.PendingChanges == null)
@@ -550,7 +561,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		MapChunks uploadedChunks = [];
 		if(cartographyData.UploadedChunks != null)
 			try {
-				uploadedChunks.FromBytes(cartographyData.UploadedChunks, null!); // Cartography table doesn't store unexplored chunks, so background is not necessary.
+				uploadedChunks.FromBytesWithSizeLimit(cartographyData.UploadedChunks, null!); // Cartography table doesn't store unexplored chunks, so background is not necessary.
 			}
 			catch(Exception ex) {
 				this.logger.Error($"An error occured when processing a synchronization packet from {player.PlayerUID} for a cartography table at {cartographyData.Position}:\n{ex}");

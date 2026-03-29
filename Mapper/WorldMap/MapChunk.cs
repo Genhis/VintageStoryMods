@@ -12,6 +12,8 @@ public readonly struct MapChunk {
 	public readonly int Timestamp;
 	public readonly ColorAndZoom ColorAndZoom;
 
+	internal readonly int SaveSizeEstimate => sizeof(byte) + sizeof(int) + sizeof(int) * MapChunk.GetRequiredDurability(this.ColorAndZoom.ZoomLevel);
+
 	public MapChunk(int[] pixels, int timestamp, ColorAndZoom colorAndZoom) {
 		this.Pixels = pixels;
 		this.Timestamp = timestamp;

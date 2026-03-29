@@ -14,6 +14,7 @@ using Vintagestory.GameContent;
 public class BlockEntityCartographyTable : BlockEntityContainer {
 	public readonly MapChunks Chunks = [];
 	public readonly object SaveLock = new();
+	internal bool expectUpdate;
 	internal int lastUpdateID;
 	private ItemMap.CustomAttributes mapAttributes;
 
@@ -34,6 +35,7 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 			ITreeAttribute? mapAttributes = tree.GetTreeAttribute("mapAttributes");
 			this.mapAttributes = mapAttributes == null ? new() : new(mapAttributes);
 
+			this.expectUpdate = false;
 			this.lastUpdateID = tree.GetInt("lastUpdateID");
 			this.Chunks.Clear();
 			byte[]? chunksData = tree.GetBytesLarge("chunks");
