@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-04-03
+### Fixed
+- Cartography table download packet could become too large and the server would reject it.
+
 ## [0.4.1] - 2026-03-29
 ### Added
 - Russian localization (contributed by Wafflz).

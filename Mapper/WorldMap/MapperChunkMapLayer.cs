@@ -203,7 +203,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			this.PreparePlayerMigration((IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), packet.MigrationVersion);
 		else if(packet.CartographyTableData != null) {
 			IServerPlayer player = (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID);
-			if(!this.ProcessCartographyTableSynchronizationRequestServer(player, packet.CartographyTableData) && packet.CartographyTableData.RequestedChunks != null)
+			if(!this.ProcessCartographyTableSynchronizationRequestServer(player, packet.CartographyTableData) && packet.CartographyTableData.TransferDirection == TransferDirection.Download)
 				this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Mode = ServerToClientPacketMode.ApplyPendingChanges}));
 		}
 		else {
@@ -451,6 +451,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 	private bool PrepareCartographyTableSyncRequest() {
+		const int RequestSizeLimit = 1000000 - 1024;
 		if(this.api.World.BlockAccessor.GetBlockEntity(this.syncRequest!.Position) is not BlockEntityCartographyTable cartographyTable)
 			return false;
 
@@ -459,7 +460,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		int ignoredChunkCount = 0;
 		MapChunks newChunks;
 		Dictionary<FastVec2i, byte>? currentZoomLevels = null;
-		Dictionary<FastVec2i, ColorAndZoom>? requestedChunks = null;
+		ServerMapChunks? requestedChunks = null;
 		lock(cartographyTable.SaveLock) {
 			if(cartographyTable.expectUpdate) {
 				this.api.Event.EnqueueMainThreadTask(() => {
@@ -468,7 +469,6 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 				return false;
 			}
 
-			cartographyTable.expectUpdate = true;
 			blockUpdateID = cartographyTable.lastUpdateID;
 			lock(this.clientStorage!.SaveLock) {
 				if(isDownload) {
@@ -494,6 +494,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 					}
 				);
 			}
+			else if(newChunks.Count != 0)
+				cartographyTable.expectUpdate = true;
 		}
 
 		if(newChunks.Count == 0) {
@@ -511,21 +513,30 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		else
 			this.syncRequest.UploadedChunkCount = newChunks.Count;
 
+		byte[]? data;
 		try {
-			// This function runs on the background thread because it could process a lot of data.
-			// I don't know if `IWorldMapManager.SendMapDataToServer()` is thread-safe, so let's assume it isn't and have main thread send the packet.
-			this.syncRequest.PreparedPacket = new ClientCartographyTableData{
-				Position = this.syncRequest.Position,
-				BlockUpdateID = blockUpdateID,
-				UploadedChunks = isDownload ? null : newChunks.ToBytesWithSizeLimit(1000000 - 1024, out this.syncRequest.OverLimitChunkCount),
-				RequestedChunks = requestedChunks,
-			};
-			this.syncRequest.UploadedChunkCount -= this.syncRequest.OverLimitChunkCount;
+			if(isDownload) {
+				data = requestedChunks!.ToBytesWithSizeLimit(RequestSizeLimit, newChunks);
+				this.syncRequest.OverLimitChunkCount = requestedChunks.Count - newChunks.Count;
+			}
+			else {
+				data = newChunks.ToBytesWithSizeLimit(RequestSizeLimit, out this.syncRequest.OverLimitChunkCount);
+				this.syncRequest.UploadedChunkCount -= this.syncRequest.OverLimitChunkCount;
+			}
 		}
 		catch(Exception ex) {
 			this.logger.Error("Failed to save new chunks for synchronization with the server:\n" + ex.ToString());
 			return false;
 		}
+
+		// This function runs on the background thread because it could process a lot of data.
+		// I don't know if `IWorldMapManager.SendMapDataToServer()` is thread-safe, so let's assume it isn't and have main thread send the packet.
+		this.syncRequest.PreparedPacket = new ClientCartographyTableData{
+			Position = this.syncRequest.Position,
+			BlockUpdateID = blockUpdateID,
+			TransferDirection = this.syncRequest.TransferDirection,
+			Data = data,
+		};
 		return true;
 	}
 
@@ -534,8 +545,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = player.PlayerUID, CartographyTableData = this.syncRequest!.PreparedPacket}));
 		if(this.syncRequest.UploadedChunkCount != 0)
 			player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-upload", this.syncRequest.UploadedChunkCount));
-		if(this.syncRequest.OverLimitChunkCount != 0)
-			player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-upload-interrupted", this.syncRequest.OverLimitChunkCount));
+		if(this.syncRequest.TransferDirection == TransferDirection.Upload && this.syncRequest.OverLimitChunkCount != 0)
+			player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-limited", this.syncRequest.OverLimitChunkCount));
 
 		this.syncRequest.PreparedPacket = null;
 		if(this.syncRequest.PendingChanges == null)
@@ -559,9 +570,13 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		}
 
 		MapChunks uploadedChunks = [];
-		if(cartographyData.UploadedChunks != null)
+		ServerMapChunks requestedChunks = [];
+		if(cartographyData.Data != null)
 			try {
-				uploadedChunks.FromBytesWithSizeLimit(cartographyData.UploadedChunks, null!); // Cartography table doesn't store unexplored chunks, so background is not necessary.
+				if(cartographyData.TransferDirection == TransferDirection.Download)
+					requestedChunks.FromBytesWithSizeLimit(cartographyData.Data);
+				else
+					uploadedChunks.FromBytesWithSizeLimit(cartographyData.Data, null!); // Cartography table doesn't store unexplored chunks, so background is not necessary.
 			}
 			catch(Exception ex) {
 				this.logger.Error($"An error occured when processing a synchronization packet from {player.PlayerUID} for a cartography table at {cartographyData.Position}:\n{ex}");
@@ -576,13 +591,13 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 			cartographyTable.MarkDirty();
 			this.logger.Audit($"{player.PlayerName} uploaded {uploadedChunks.Count} chunks to a cartography table at {cartographyData.Position} ({beforeCount} -> {cartographyTable.Chunks.Count})");
 		}
-		if(cartographyData.RequestedChunks == null)
+		if(requestedChunks.Count == 0)
 			return true;
 
 		List<FastVec2i> approvedChanges = [];
 		Dictionary<RegionPosition, MapRegion> storedRegions = this.serverStorage![player.PlayerUID].Regions;
 		BlockEntityCartographyTable.ProcessChunksResult result = cartographyTable.ProcessChunks(
-			cartographyData.RequestedChunks,
+			requestedChunks,
 			chunkPosition => storedRegions.GetOrCreate(RegionPosition.FromChunkPosition(chunkPosition)).GetZoomLevel(chunkPosition),
 			(chunkPosition, colorAndZoom) => {
 				storedRegions.GetOrCreate(RegionPosition.FromChunkPosition(chunkPosition)).SetColorAndZoomLevels(chunkPosition, colorAndZoom.Color, colorAndZoom.ZoomLevel, true);
@@ -627,6 +642,8 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-download", downloadedChunks));
 		if(this.syncRequest.IgnoredChunkCount != 0)
 			player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-ignored", this.syncRequest.IgnoredChunkCount));
+		if(this.syncRequest.OverLimitChunkCount != 0)
+			player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-limited", this.syncRequest.OverLimitChunkCount));
 		this.syncRequest = null;
 
 		if(missingChunks != 0 || ignoredChunks != 0) {
