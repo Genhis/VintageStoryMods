@@ -11,6 +11,7 @@
 		"output": {"type": "item", "code": "compass-primitive-{color}"}
 	},
 	{
+		"recipeGroup": 1,
 		"width": 2,
 		"height": 2,
 		"ingredientPattern": "NC,_B",

@@ -2,7 +2,6 @@ namespace Mapper.Patches;
 
 using HarmonyLib;
 using Mapper.Util;
-using Mapper.Util.Harmony;
 using Mapper.Util.Reflection;
 using Mapper.WorldMap;
 using System.Collections.Generic;
@@ -18,9 +17,18 @@ internal static class PlayerMapLayerPatch {
 	[HarmonyPatch("Render")]
 	[HarmonyTranspiler]
 	internal static IEnumerable<CodeInstruction> Render(IEnumerable<CodeInstruction> instructions) {
-		CodeMatcher matcher = new(instructions);
+		return PlayerMapLayerPatch.SharedTranspiler(new CodeMatcher(instructions), "Render", 1).InstructionEnumeration();
+	}
 
-		// Find https://github.com/anegostudios/vsessentialsmod/blob/0dcba6c6ec636e20dbcab6d76c8514fbed282fb3/Systems/WorldMap/EntityLayer/PlayerMapLayer.cs#L85
+	[HarmonyPatch("OnMouseMoveClient")]
+	[HarmonyTranspiler]
+	internal static IEnumerable<CodeInstruction> OnMouseMoveClient(IEnumerable<CodeInstruction> instructions) {
+		return PlayerMapLayerPatch.SharedTranspiler(new CodeMatcher(instructions), "OnMouseMoveClient", 2).InstructionEnumeration();
+	}
+
+	private static CodeMatcher SharedTranspiler(CodeMatcher matcher, string functionName, int mapArgumentIndex) {
+		// Find https://github.com/anegostudios/vsessentialsmod/blob/2115302daf2bde86bf751ba64fe9a955735955d5/Systems/WorldMap/EntityLayer/PlayerMapLayer.cs#L82 or
+		// Find https://github.com/anegostudios/vsessentialsmod/blob/2115302daf2bde86bf751ba64fe9a955735955d5/Systems/WorldMap/EntityLayer/PlayerMapLayer.cs#L137
 		// Remember label which increments the enumerator and checks loop condition
 		object loopContinue = matcher.MatchEndForward([
 			new(OpCodes.Ldarg_0),
@@ -29,39 +37,8 @@ internal static class PlayerMapLayerPatch {
 			new(OpCodes.Callvirt),
 			CodeMatch.IsStloc(),
 			new(OpCodes.Br),
-		]).ThrowIfInvalid("Could not find `PlayerMapLayer.Render::GetAllTrackedPlayerPositions().GetEnumerator()`").Instruction.operand;
+		]).ThrowIfInvalid($"Could not find `PlayerMapLayer.{functionName}::GetAllTrackedPlayerPositions().GetEnumerator()`").Instruction.operand;
 
-		return PlayerMapLayerPatch.SharedTranspiler(matcher, "Render", 1, loopContinue).InstructionEnumeration();
-	}
-
-	[HarmonyPatch("OnMouseMoveClient")]
-	[HarmonyTranspiler]
-	internal static IEnumerable<CodeInstruction> OnMouseMoveClient(IEnumerable<CodeInstruction> instructions) {
-		CodeMatcher matcher = new(instructions);
-
-		// Find https://github.com/anegostudios/vsessentialsmod/blob/0dcba6c6ec636e20dbcab6d76c8514fbed282fb3/Systems/WorldMap/EntityLayer/PlayerMapLayer.cs#L142
-		// Remember loop variable index (it's converted to a while loop)
-		int loopVariableIndex = matcher.MatchStartForward([
-			new(OpCodes.Callvirt, typeof(IWorldAccessor).GetCheckedProperty("AllOnlinePlayers", BindingFlags.Instance).CheckedGetMethod()),
-			CodeMatch.IsStloc(),
-			new(OpCodes.Ldc_I4_0),
-			CodeMatch.IsStloc(),
-			new(OpCodes.Br),
-		]).ThrowIfInvalid("Could not find `PlayerMapLayer.OnMouseMoveClient::AllOnlinePlayers`").InstructionAt(3).LocalIndex();
-
-		// Find https://github.com/anegostudios/vsessentialsmod/blob/0dcba6c6ec636e20dbcab6d76c8514fbed282fb3/Systems/WorldMap/EntityLayer/PlayerMapLayer.cs#L168
-		// Remember loop continue label (the code increments loop variable, checks loop condition and jumps to the start if able)
-		Label loopContinue = matcher.MatchStartForward([
-			HarmonyUtil.IsLdloc(loopVariableIndex),
-			new(OpCodes.Ldc_I4_1),
-			new(OpCodes.Add),
-			HarmonyUtil.IsStloc(loopVariableIndex),
-		]).ThrowIfInvalid("Could not find `PlayerMapLayer.OnMouseMoveClient::AllOnlinePlayers` loop continue label").Instruction.labels[0];
-
-		return PlayerMapLayerPatch.SharedTranspiler(matcher.Start(), "OnMouseMoveClient", 2, loopContinue).InstructionEnumeration();
-	}
-
-	private static CodeMatcher SharedTranspiler(CodeMatcher matcher, string functionName, int mapArgumentIndex, object loopContinue) {
 		// Find https://github.com/anegostudios/vsessentialsmod/blob/0dcba6c6ec636e20dbcab6d76c8514fbed282fb3/Systems/WorldMap/EntityLayer/PlayerMapLayer.cs#L91 or
 		// Find https://github.com/anegostudios/vsessentialsmod/blob/0dcba6c6ec636e20dbcab6d76c8514fbed282fb3/Systems/WorldMap/EntityLayer/PlayerMapLayer.cs#L145
 		// Remember player load instruction
