@@ -200,6 +200,10 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 			if(!this.ProcessCartographyTableSynchronizationRequestServer(player, packet.CartographyTableData) && packet.CartographyTableData.TransferDirection == TransferDirection.Download)
 				this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Mode = ServerToClientPacketMode.ApplyPendingChanges}));
 		}
+#if DEBUG
+		else if(packet.DebugData != null)
+			this.OnDebugDataFromClient((IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), packet.DebugData);
+#endif
 		else {
 			this.dirty = true;
 			this.serverStorage![packet.PlayerUID].LastKnownPosition = packet.LastKnownPosition;

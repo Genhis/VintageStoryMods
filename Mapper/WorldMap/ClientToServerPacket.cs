@@ -11,6 +11,9 @@ public class ClientToServerPacket {
 	public Vec3d? LastKnownPosition;
 	public uint MigrationVersion;
 	public bool RecoverMap;
+#if DEBUG
+	public ClientDebugData? DebugData;
+#endif
 }
 
 [ProtoContract(ImplicitFields = ImplicitFields.AllPublic)]

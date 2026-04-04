@@ -75,4 +75,6 @@ public static class VintageStoryExtensions {
 	public static FastVec2i ToChunkPosition(this Vec3d position) {
 		return new FastVec2i((int)position.X / GlobalConstants.ChunkSize, (int)position.Z / GlobalConstants.ChunkSize);
 	}
+
+	public static (int, int) ToTuple(this FastVec2i position) => (position.X, position.Y);
 }
