@@ -45,6 +45,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 	private enum Status { Enabled, DisabledMap, CorruptedData }
 	private Status status = Status.Enabled;
 
+	private IClientPlayer ClientPlayer => ((ICoreClientAPI)this.api).World.Player;
 	public int CurrentTime => this.startTime + (int)(this.api.World.ElapsedMilliseconds / 1000);
 	public override EnumMapAppSide DataSide => EnumMapAppSide.Server;
 	public bool Enabled => this.status == Status.Enabled;
@@ -155,7 +156,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 			return false;
 
 		this.lastKnownPosition = position?.Clone();
-		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = ((ICoreClientAPI)this.api).World.Player.PlayerUID, LastKnownPosition = this.lastKnownPosition}));
+		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = this.ClientPlayer.PlayerUID, LastKnownPosition = this.lastKnownPosition}));
 		return true;
 	}
 
@@ -182,20 +183,20 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 
 	public override void OnDataFromClient(byte[] data) {
 		ClientToServerPacket packet = SerializerUtil.Deserialize<ClientToServerPacket>(data);
+		IServerPlayer player = (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID);
 		if(!this.Enabled) {
-			this.CheckEnabledServer((IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID));
+			this.CheckEnabledServer(player);
 			return;
 		}
 
 		if(packet.RecoverMap)
-			this.mapSink.SendMapDataToClient(this, (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), SerializerUtil.Serialize(new ServerToClientPacket{
+			this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{
 				Mode = ServerToClientPacketMode.RecoverMap,
 				Changes = this.serverStorage![packet.PlayerUID].PrepareClientRecovery(true),
 			}));
 		else if(packet.MigrationVersion != 0)
-			this.PreparePlayerMigration((IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID), packet.MigrationVersion);
+			this.PreparePlayerMigration(player, packet.MigrationVersion);
 		else if(packet.CartographyTableData != null) {
-			IServerPlayer player = (IServerPlayer)this.api.World.PlayerByUid(packet.PlayerUID);
 			if(!this.ProcessCartographyTableSynchronizationRequestServer(player, packet.CartographyTableData) && packet.CartographyTableData.TransferDirection == TransferDirection.Download)
 				this.mapSink.SendMapDataToClient(this, player, SerializerUtil.Serialize(new ServerToClientPacket{Mode = ServerToClientPacketMode.ApplyPendingChanges}));
 		}
@@ -218,7 +219,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 		ServerToClientPacket packet = SerializerUtil.Deserialize<ServerToClientPacket>(data);
 		if(packet.Mode == ServerToClientPacketMode.RecoverMap && this.status == Status.CorruptedData) {
 			this.status = Status.Enabled;
-			((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-mapper-restore-client-request-response"));
+			this.ClientPlayer.ShowChatNotification(Lang.Get("mapper:commandresult-mapper-restore-client-request-response"));
 			if(packet.Changes == null)
 				return;
 		}
@@ -241,7 +242,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 
 			if(this.clientStorage!.DataVersion < ClientMapStorage.LatestServerMigrationVersion)
 				this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{
-					PlayerUID = ((ICoreClientAPI)this.api).World.Player.PlayerUID,
+					PlayerUID = this.ClientPlayer.PlayerUID,
 					MigrationVersion = this.clientStorage.DataVersion,
 				}));
 
@@ -422,7 +423,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 		if(this.lastKnownPosition != null)
 			return this.lastKnownPosition;
 
-		IClientPlayer player = ((ICoreClientAPI)this.api).World.Player;
+		IClientPlayer player = this.ClientPlayer;
 		EntityPos entityPos = player.Entity.Pos;
 		return MapperChunkMapLayer.ClampPosition(entityPos.XYZ, this.GetScaleFactor(player, entityPos.ToChunkPosition()) ?? 1);
 	}
@@ -459,7 +460,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 		lock(cartographyTable.SaveLock) {
 			if(cartographyTable.expectUpdate) {
 				this.api.Event.EnqueueMainThreadTask(() => {
-					((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:error-cartographytable-sync-pending"));
+					this.ClientPlayer.ShowChatNotification(Lang.Get("mapper:error-cartographytable-sync-pending"));
 				}, null);
 				return false;
 			}
@@ -496,7 +497,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 		if(newChunks.Count == 0) {
 			if(ignoredChunkCount != 0)
 				this.api.Event.EnqueueMainThreadTask(() => {
-					((ICoreClientAPI)this.api).World.Player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-ignored", ignoredChunkCount));
+					this.ClientPlayer.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-ignored", ignoredChunkCount));
 				}, null);
 			return false;
 		}
@@ -536,7 +537,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 	private void SendCartographyTableSyncRequest() {
-		IClientPlayer player = ((ICoreClientAPI)this.api).World.Player;
+		IClientPlayer player = this.ClientPlayer;
 		this.mapSink.SendMapDataToServer(this, SerializerUtil.Serialize(new ClientToServerPacket{PlayerUID = player.PlayerUID, CartographyTableData = this.syncRequest!.PreparedPacket}));
 		if(this.syncRequest.UploadedChunkCount != 0)
 			player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-upload", this.syncRequest.UploadedChunkCount));
@@ -636,7 +637,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 			this.dirty = true;
 		}
 
-		IClientPlayer player = ((ICoreClientAPI)this.api).World.Player;
+		IClientPlayer player = this.ClientPlayer;
 		int downloadedChunks = approvedChanges.Count - missingChunks;
 		int ignoredChunks = this.syncRequest.PendingChanges.Count - downloadedChunks;
 		player.ShowChatNotification(Lang.Get("mapper:commandresult-cartographytable-download", downloadedChunks));
