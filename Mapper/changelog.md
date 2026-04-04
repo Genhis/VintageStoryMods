@@ -5,8 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Added
+- **New intermediate items:** Fresh/soaked papyrus strips, wet papyrus sheet.
 - Basic support for [Geology Map](https://mods.vintagestory.at/geologymap) mod: Chunks are refreshed and stored periodically, but Mapper processes them and decides if they should be shown.
 ### Changed
+- Made papyrus sheet crafting chain more complex by adding cooking and drying steps.
 - Optimized downloading chunks from the cartography table - it unnecessarily refreshed minimap chunks outside of its view.
 
 ## [0.4.2] - 2026-04-03

@@ -1,0 +1,59 @@
+{
+	"code": "reedstrips",
+	"variantGroups": [
+		{"code": "material", "states": ["papyrus"]},
+		{"code": "state", "states": ["fresh", "soaked"]}
+	],
+	"creativeInventory": {"general": ["*"], "items": ["*"]},
+	"maxStackSize": 64,
+	"materialDensity": 100,
+	"behaviors": [
+		{
+			"name": "GroundStorable",
+			"properties": {
+				"layout": "Messy12",
+				"collisionBox": {
+					"x1": 0, "y1": 0, "z1": 0,
+					"x2": 1, "y2": 0.1, "z2": 1
+				}
+			}
+		}
+	],
+	"combustiblePropsByType": {
+		"*-fresh": {
+			"burnDuration": 1.5,
+			"burnTemperature": 600
+		}
+	},
+	"transitionablePropsByType": {
+		"*-soaked": [
+			{
+				"type": "perish",
+				"freshHours": {"avg": 24},
+				"transitionHours": {"avg": 8},
+				"transitionedStack": {"type": "item", "code": "game:rot"},
+				"transitionRatio": 1
+			}
+		]
+	},
+	"shape": {"base": "item/reedstrips"},
+	"textures": {"stem": {"base": "item/papyrus-stem-{state}"}},
+	"guiTransform": {
+		"translation": {"x": 2, "y": 3, "z": 0},
+		"rotation": {"x": 150, "y": 25, "z": -50},
+		"origin": {"x": 0.5, "y": 0, "z": 0.5},
+		"scale": 2.25
+	},
+	"tpHandTransform": {
+		"translation": {"x": -0.65, "y": 0, "z": -0.63},
+		"rotation": {"x": 0, "y": -90, "z": 0},
+		"origin": {"x": 0.5, "y": 0, "z": 0.5},
+		"scale": 0.8
+	},
+	"groundTransform": {
+		"translation": {"x": 0, "y": 0, "z": 0},
+		"rotation": {"x": 3, "y": 0, "z": -3},
+		"origin": {"x": 0.5, "y": 0, "z": 0.5},
+		"scale": 3
+	}
+}

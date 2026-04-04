@@ -1,0 +1,26 @@
+[
+	{
+		"code": "reedstrips-papyrus-soaked",
+		"shape": {"base": "block/food/meal/liquid"},
+		"perishableProps": {
+			"type": "None",
+			"transitionedStack": {"type": "item", "code": "reedstrips-papyrus-soaked"}
+		},
+		"ingredients": [
+			{
+				"code": "water",
+				"validStacks": [{"type": "item", "code": "game:waterportion", "shapeElement": "bowl/water"}],
+				"minQuantity": 1,
+				"maxQuantity": 1,
+				"portionSizeLitres": 0.2
+			},
+			{
+				"code": "reedstrips",
+				"validStacks": [{"type": "item", "code": "reedstrips-papyrus-fresh"}],
+				"minQuantity": 3,
+				"maxQuantity": 3
+			}
+		],
+		"cooksInto": {"type": "item", "code": "reedstrips-papyrus-soaked", "quantity": 3}
+	}
+]

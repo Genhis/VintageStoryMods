@@ -1,0 +1,37 @@
+{
+	"code": "wetpaper",
+	"variantGroups": [
+		{"code": "material", "states": ["papyrus"]}
+	],
+	"maxStackSize": 16,
+	"creativeInventory": {"general": ["*"], "items": ["*"]},
+	"transitionableProps": [
+		{
+			"type": "dry",
+			"freshHours": {"avg": 0},
+			"transitionHours": {"avg": 24},
+			"transitionedStack": {"type": "item", "code": "game:paper-{material}"},
+			"transitionRatio": 1
+		}
+	],
+	"shape": {"base": "game:block/wood/crate/label-paper"},
+	"textures": {"labelbase": {"base": "item/wetpaper-papyrus"}},
+	"tpHandTransform": {
+		"translation": {"x": 0, "y": 0, "z": 0},
+		"rotation": {"x": 5, "y": 180, "z": 1},
+		"origin": {"x": -0.8, "y": -1.47, "z": -0.39},
+		"scale": 0.65
+	},
+	"groundTransform": {
+		"translation": {"x": 0, "y": 0, "z": 0},
+		"rotation": {"x": 90, "y": 0, "z": 2},
+		"origin": {"x": 0.5, "y": 0.5, "z": 0.08},
+		"scale": 3.2
+	},
+	"guiTransform": {
+		"translation": {"x": 0, "y": 0, "z": 0},
+		"rotation": {"x": 42, "y": 34, "z": -33},
+		"origin": {"x": 0.53, "y": 0.55, "z": 0},
+		"scale": 2.45
+	}
+}

@@ -1,0 +1,11 @@
+[
+	{
+		"width": 3,
+		"height": 1,
+		"ingredientPattern": "PPP",
+		"ingredients": {
+			"P": {"type": "item", "code": "reedstrips-*-soaked", "name": "material", "quantity": 2}
+		},
+		"output": {"type": "item", "code": "wetpaper-{material}"}
+	}
+]
