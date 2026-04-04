@@ -21,6 +21,8 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 	private const int ClientAutosaveTime = 60 * 5;
 	private static readonly FieldAccessor<ChunkMapLayer, UniqueQueue<FastVec2i>> chunksToGen = new("chunksToGen");
 	private static readonly FieldAccessor<ChunkMapLayer, object> chunksToGenLock = new("chunksToGenLock");
+	private static readonly FieldAccessor<ChunkMapLayer, HashSet<FastVec2i>> curVisibleChunks = new("curVisibleChunks"); // not thread-safe
+	private static readonly FieldAccessor<ChunkMapLayer, ConcurrentDictionary<FastVec2i, MultiChunkMapComponent>> loadedMapData = new("loadedMapData");
 	private static readonly FieldAccessor<ChunkMapLayer, ConcurrentQueue<ReadyMapPiece>> readyMapPieces = new("readyMapPieces");
 
 	// Server variables
@@ -255,13 +257,15 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 	}
 
 	private void UpdateChunks(Dictionary<FastVec2i, ColorAndZoom> changes) {
+		HashSet<FastVec2i> curVisibleChunks = MapperChunkMapLayer.curVisibleChunks.GetValue(this);
 		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
 		this.dirty = true;
 		foreach(KeyValuePair<FastVec2i, ColorAndZoom> item in changes) {
 			if(!this.clientStorage!.Chunks.ContainsKey(item.Key) || item.Value.Color == 0) {
 				int[] pixels = this.background!.GetPixels(item.Key, item.Value.ZoomLevel);
 				this.clientStorage.Chunks[item.Key] = new MapChunk(pixels, 0, new ColorAndZoom(0, item.Value.ZoomLevel));
-				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = item.Key, Pixels = pixels});
+				if(curVisibleChunks.Contains(item.Key))
+					readyMapPieces.Enqueue(new ReadyMapPiece{Cord = item.Key, Pixels = pixels});
 			}
 			if(item.Value.Color > 0)
 				this.clientStorage.ChunksToRedraw.Enqueue(item);
@@ -613,6 +617,8 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 		}
 
 		int missingChunks = 0;
+		HashSet<FastVec2i> curVisibleChunks = MapperChunkMapLayer.curVisibleChunks.GetValue(this);
+		ConcurrentDictionary<FastVec2i, MultiChunkMapComponent> loadedMapData = MapperChunkMapLayer.loadedMapData.GetValue(this);
 		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
 		lock(this.clientStorage!.SaveLock) {
 			foreach(FastVec2i chunkPosition in approvedChanges) {
@@ -622,7 +628,10 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 				}
 
 				this.clientStorage.Chunks[chunkPosition] = mapChunk;
-				readyMapPieces.Enqueue(new ReadyMapPiece{Cord = chunkPosition, Pixels = mapChunk.Pixels});
+				if(curVisibleChunks.Contains(chunkPosition))
+					readyMapPieces.Enqueue(new ReadyMapPiece{Cord = chunkPosition, Pixels = mapChunk.Pixels});
+				else if(loadedMapData.TryGetValue(chunkPosition / MultiChunkMapComponent.ChunkLen, out MultiChunkMapComponent? multiChunkComponent))
+					multiChunkComponent.unsetChunk(chunkPosition.X % MultiChunkMapComponent.ChunkLen, chunkPosition.Z % MultiChunkMapComponent.ChunkLen);
 			}
 			this.dirty = true;
 		}
