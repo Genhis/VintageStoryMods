@@ -18,19 +18,24 @@ public class BufferedWriter : IDisposable {
 	}
 
 	public void Dispose() {
-		this.Flush();
+		this.FlushBuffer();
 		if(!this.leaveOpen)
 			this.stream.Dispose();
 	}
 
 	public void Flush() {
+		this.FlushBuffer();
+		this.stream.Flush();
+	}
+
+	private void FlushBuffer() {
 		this.stream.Write(this.buffer, 0, this.position);
 		this.position = 0;
 	}
 
 	public void Write(byte value) {
 		if(this.position == this.buffer.Length)
-			this.Flush();
+			this.FlushBuffer();
 		this.buffer[this.position++] = value;
 	}
 
@@ -48,7 +53,7 @@ public class BufferedWriter : IDisposable {
 	public void Write(string value) {
 		int estimatedByteCount = value.Length * 3 + sizeof(int);
 		if(this.buffer.Length - this.position < estimatedByteCount) {
-			this.Flush();
+			this.FlushBuffer();
 			if(this.buffer.Length < estimatedByteCount)
 				throw new NotSupportedException("String is too large for the allocated buffer size");
 		}
@@ -61,7 +66,7 @@ public class BufferedWriter : IDisposable {
 
 	private Span<byte> RequestBuffer(int size) {
 		if(this.position + size > this.buffer.Length)
-			this.Flush();
+			this.FlushBuffer();
 
 		Span<byte> span = this.buffer.AsSpan(this.position, size);
 		this.position += size;

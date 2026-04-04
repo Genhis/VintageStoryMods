@@ -5,6 +5,7 @@
 	"commanddesc-mapper-restore": "Enables Mapper mod if it was disabled and overwrites old data.",
 	"commandresult-cartographytable-download": "Copied {p0:# chunks|# chunk|# chunks} from the Cartography table.",
 	"commandresult-cartographytable-ignored": "{p0:# chunks were|# chunk was|# chunks were} ignored due to having different properties than the map or the drawing kit can support.",
+	"commandresult-cartographytable-limited": "{p0:# chunks weren't|# chunk wasn't|# chunks weren't} processed due to the server limit. Press the button again if you want to continue.",
 	"commandresult-cartographytable-upload": "Stored {p0:# chunks|# chunk|# chunks} in the Cartography table.",
 	"commandresult-mapper-restore-client-error": "Mapper mod doesn't have any corrupted data on the client.",
 	"commandresult-mapper-restore-client-request-response": "Ok, Mapper mod enabled on the client.",
