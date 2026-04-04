@@ -17,7 +17,7 @@ using Vintagestory.API.Server;
 using Vintagestory.API.Util;
 using Vintagestory.GameContent;
 
-public class MapperChunkMapLayer : ChunkMapLayer {
+public partial class MapperChunkMapLayer : ChunkMapLayer {
 	private const int ClientAutosaveTime = 60 * 5;
 	private static readonly FieldAccessor<ChunkMapLayer, UniqueQueue<FastVec2i>> chunksToGen = new("chunksToGen");
 	private static readonly FieldAccessor<ChunkMapLayer, object> chunksToGenLock = new("chunksToGenLock");
@@ -70,16 +70,7 @@ public class MapperChunkMapLayer : ChunkMapLayer {
 		this.api.ChatCommands.GetOrCreate("mapper").RequiresPrivilege(Privilege.root).BeginSubCommand("restore").WithDescription(Lang.Get("mapper:commanddesc-mapper-restore")).HandleWith(this.HandleRestoreCommand);
 
 #if DEBUG
-		this.api.ChatCommands.GetOrCreate("mapper").BeginSubCommand("clear").HandleWith(args => {
-			if(this.clientStorage != null)
-				lock(this.clientStorage.SaveLock) {
-					this.clientStorage.Chunks.Clear();
-					this.clientStorage.ChunksToRedraw.Clear();
-				}
-			else if(args.Caller.Player != null)
-				this.serverStorage![args.Caller.Player.PlayerUID].Regions.Clear();
-			return TextCommandResult.Success("Done!");
-		});
+		this.RegisterDebugCommands();
 #endif
 	}
 
