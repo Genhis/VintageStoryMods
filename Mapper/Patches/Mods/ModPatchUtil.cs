@@ -13,19 +13,29 @@ using Vintagestory.GameContent;
 
 public static class ModPatchUtil {
 	public static void OnLoaded(MapLayer instance, ICoreAPI api, UniqueQueue<FastVec2i> chunksToGen, object chunksToGenLock) {
+		if(api.Side == EnumAppSide.Server)
+			return;
+
 		MapperChunkMapLayer mapperLayer = MapperChunkMapLayer.GetInstance(api);
-		lock(mapperLayer.OnChunkChanged)
-			mapperLayer.OnChunkChanged[instance] = chunkPosition => {
+		lock(mapperLayer.OnChunkRedrawn)
+			mapperLayer.OnChunkRedrawn[instance] = chunkPosition => {
 				lock(chunksToGenLock)
 					chunksToGen.Enqueue(chunkPosition);
 			};
+		mapperLayer.OnChunkInvalidated[instance] = chunkPosition => instance.OnViewChangedClient([], [chunkPosition]);
 	}
 
 	public static void OnShutDown(MapLayer instance, ICoreAPI api) {
+		if(api.Side == EnumAppSide.Server)
+			return;
+
 		MapperChunkMapLayer? mapperLayer = MapperChunkMapLayer.GetInstance(api);
-		if(mapperLayer != null)
-			lock(mapperLayer.OnChunkChanged)
-				mapperLayer.OnChunkChanged.Remove(instance);
+		if(mapperLayer == null)
+			return;
+
+		lock(mapperLayer.OnChunkRedrawn)
+			mapperLayer.OnChunkRedrawn.Remove(instance);
+		mapperLayer.OnChunkInvalidated.Remove(instance);
 	}
 
 	public static bool LoadFromChunkPixels(FastVec2i cord, ref int[] pixels, ICoreAPI api, bool useBoxFilter) {

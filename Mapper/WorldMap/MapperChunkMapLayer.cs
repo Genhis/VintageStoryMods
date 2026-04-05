@@ -49,7 +49,9 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 	public int CurrentTime => this.startTime + (int)(this.api.World.ElapsedMilliseconds / 1000);
 	public override EnumMapAppSide DataSide => EnumMapAppSide.Server;
 	public bool Enabled => this.status == Status.Enabled;
-	public readonly Dictionary<object, Action<FastVec2i>> OnChunkChanged = [];
+
+	public readonly Dictionary<object, Action<FastVec2i>> OnChunkRedrawn = [];
+	public readonly Dictionary<object, Action<FastVec2i>> OnChunkInvalidated = [];
 
 	public MapperChunkMapLayer(ICoreAPI api, IWorldMapManager mapSink) : base(api, mapSink) {
 		this.logger = api.Logger;
@@ -328,7 +330,6 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 
 		// I am locking and unlocking SaveLock repeatedly and using it only for necessary operations.
 		// The main thread should be able to acquire the lock and get priority over this one, I don't want to cause lag spikes.
-		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
 		IBlockAccessor blockAccessor = this.api.World.BlockAccessor;
 		for(; count > 0 && !this.mapSink.IsShuttingDown; --count) {
 			KeyValuePair<FastVec2i, ColorAndZoom> redrawRequest;
@@ -356,13 +357,26 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 				this.dirty = true;
 				this.clientStorage.Chunks[redrawRequest.Key] = new MapChunk(pixels, timestamp, redrawRequest.Value);
 			}
-			readyMapPieces.Enqueue(new ReadyMapPiece{Cord = redrawRequest.Key, Pixels = pixels});
-
-			if(this.OnChunkChanged.Count != 0)
-				lock(this.OnChunkChanged)
-					foreach(KeyValuePair<object, Action<FastVec2i>> item in this.OnChunkChanged)
-						item.Value.Invoke(redrawRequest.Key);
+			this.RedrawChunk(redrawRequest.Key, pixels);
 		}
+	}
+
+	private void RedrawChunk(in FastVec2i chunkPosition, int[] pixels) {
+		MapperChunkMapLayer.readyMapPieces.GetValue(this).Enqueue(new ReadyMapPiece{Cord = chunkPosition, Pixels = pixels});
+
+		if(this.OnChunkRedrawn.Count != 0)
+			lock(this.OnChunkRedrawn)
+				foreach(KeyValuePair<object, Action<FastVec2i>> item in this.OnChunkRedrawn)
+					item.Value.Invoke(chunkPosition);
+	}
+
+	// not thread-safe
+	private void InvalidateChunk(in FastVec2i chunkPosition) {
+		if(MapperChunkMapLayer.loadedMapData.GetValue(this).TryGetValue(chunkPosition / MultiChunkMapComponent.ChunkLen, out MultiChunkMapComponent? multiChunkComponent))
+			multiChunkComponent.unsetChunk(chunkPosition.X % MultiChunkMapComponent.ChunkLen, chunkPosition.Z % MultiChunkMapComponent.ChunkLen);
+
+		foreach(KeyValuePair<object, Action<FastVec2i>> item in this.OnChunkInvalidated)
+			item.Value.Invoke(chunkPosition);
 	}
 
 	private void ProcessMappedChunks() {
@@ -623,8 +637,6 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 
 		int missingChunks = 0;
 		HashSet<FastVec2i> curVisibleChunks = MapperChunkMapLayer.curVisibleChunks.GetValue(this);
-		ConcurrentDictionary<FastVec2i, MultiChunkMapComponent> loadedMapData = MapperChunkMapLayer.loadedMapData.GetValue(this);
-		ConcurrentQueue<ReadyMapPiece> readyMapPieces = MapperChunkMapLayer.readyMapPieces.GetValue(this);
 		lock(this.clientStorage!.SaveLock) {
 			foreach(FastVec2i chunkPosition in approvedChanges) {
 				if(!this.syncRequest.PendingChanges.TryGetValue(chunkPosition, out MapChunk mapChunk)) {
@@ -634,9 +646,9 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 
 				this.clientStorage.Chunks[chunkPosition] = mapChunk;
 				if(curVisibleChunks.Contains(chunkPosition))
-					readyMapPieces.Enqueue(new ReadyMapPiece{Cord = chunkPosition, Pixels = mapChunk.Pixels});
-				else if(loadedMapData.TryGetValue(chunkPosition / MultiChunkMapComponent.ChunkLen, out MultiChunkMapComponent? multiChunkComponent))
-					multiChunkComponent.unsetChunk(chunkPosition.X % MultiChunkMapComponent.ChunkLen, chunkPosition.Z % MultiChunkMapComponent.ChunkLen);
+					this.RedrawChunk(chunkPosition, mapChunk.Pixels);
+				else
+					this.InvalidateChunk(chunkPosition);
 			}
 			this.dirty = true;
 		}

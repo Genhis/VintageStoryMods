@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Made papyrus sheet crafting chain more complex by adding cooking and drying steps.
 - Halved parchemnt cost of the precise map.
 - Optimized downloading chunks from the cartography table - it unnecessarily refreshed minimap chunks outside of its view.
+### Fixed
+- GiMap didn't refresh chunks downloaded from the cartography table.
 
 ## [0.4.2] - 2026-04-03
 ### Fixed
