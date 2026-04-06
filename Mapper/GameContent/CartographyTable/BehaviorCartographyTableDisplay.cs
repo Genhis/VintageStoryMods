@@ -13,7 +13,7 @@ public class BehaviorCartographyTableDisplay(CollectibleObject collObj) : Collec
 
 	public override void Initialize(JsonObject properties) {
 		base.Initialize(properties);
-		this.compositeShapes = properties["shapes"].AsArray<CompositeShape>(null, this.collObj.Code.Domain);
+		this.compositeShapes = properties["shapes"].AsArray<CompositeShape>(null, this.collObj.Code.Domain)!;
 	}
 
 	public override void OnLoaded(ICoreAPI api) {

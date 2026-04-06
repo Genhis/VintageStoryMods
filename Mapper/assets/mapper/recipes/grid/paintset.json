@@ -11,7 +11,6 @@
 		"output": {"type": "item", "code": "paintset-coal"}
 	},
 	{
-		"name": "paintset-vintage",
 		"width": 3,
 		"height": 3,
 		"ingredientPattern": "AB_,DE_,GPP",
@@ -26,7 +25,6 @@
 		"output": {"type": "item", "code": "paintset-vintage"}
 	},
 	{
-		"name": "paintset-vintage",
 		"width": 3,
 		"height": 3,
 		"ingredientPattern": "AB_,DE_,GPP",
@@ -41,7 +39,6 @@
 		"output": {"type": "item", "code": "paintset-vintage"}
 	},
 	{
-		"name": "paintset-colorful",
 		"width": 3,
 		"height": 3,
 		"ingredientPattern": "ABC,DEF,GPP",
@@ -58,7 +55,6 @@
 		"output": {"type": "item", "code": "paintset-colorful"}
 	},
 	{
-		"name": "paintset-colorful",
 		"width": 3,
 		"height": 3,
 		"ingredientPattern": "ABC,DEF,GPP",

@@ -36,7 +36,7 @@ public static class GuiElementMapPatch {
 			new(OpCodes.Callvirt, typeof(ICoreClientAPI).GetCheckedProperty("World", BindingFlags.Instance).CheckedGetMethod()),
 			new(OpCodes.Callvirt, typeof(IClientWorldAccessor).GetCheckedProperty("Player", BindingFlags.Instance).CheckedGetMethod()),
 			new(OpCodes.Callvirt, typeof(IPlayer).GetCheckedProperty("Entity", BindingFlags.Instance).CheckedGetMethod()),
-			new(OpCodes.Ldfld, typeof(Entity).GetCheckedField("Pos", BindingFlags.Instance)),
+			new(OpCodes.Callvirt, typeof(Entity).GetCheckedProperty("Pos", BindingFlags.Instance).CheckedGetMethod()),
 			new(OpCodes.Callvirt, typeof(EntityPos).GetCheckedProperty("AsBlockPos", BindingFlags.Instance).CheckedGetMethod()),
 			new(OpCodes.Call, typeof(GuiElementMap).GetCheckedMethod("CenterMapTo", BindingFlags.Instance, [typeof(BlockPos)])),
 		]).ThrowIfInvalid("Could not find `GuiElementMap.OnKeyDown()::CenterMapTo()` to patch").Advance(1).RemoveInstructions(6).SetOperandAndAdvance(typeof(GuiElementMapPatch).GetCheckedMethod("CenterMapToPlayer", BindingFlags.Static, [typeof(GuiElementMap)])).InstructionEnumeration();

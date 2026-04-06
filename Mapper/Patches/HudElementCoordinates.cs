@@ -80,7 +80,7 @@ internal static class HudElementCoordinatesPatch {
 		// Find player position getter
 		// Change it to `MapperChunkMapLayer.ClampPosition(...Pos.XYZ, scaleFactor.Value).AsBlockPos`
 		matcher.MatchEndForward([
-			new(OpCodes.Ldfld, typeof(Entity).GetCheckedField("Pos", BindingFlags.Instance)),
+			new(OpCodes.Callvirt, typeof(Entity).GetCheckedProperty("Pos", BindingFlags.Instance).CheckedGetMethod()),
 			new(OpCodes.Callvirt, typeof(EntityPos).GetCheckedProperty("AsBlockPos", BindingFlags.Instance).CheckedGetMethod()),
 		]).ThrowIfInvalid("Could not find `HudElementCoordinates.Every250ms()::Pos` to patch").RemoveInstruction().InsertAndAdvance([
 			new(OpCodes.Callvirt, typeof(EntityPos).GetCheckedProperty("XYZ", BindingFlags.Instance).CheckedGetMethod()),

@@ -33,6 +33,9 @@ internal static class EntityMapComponentPatch {
 		// if(scaleFactor == null) return;
 		matcher.Start().CreateLabel(out Label originalStart).DeclareLocal(typeof(int?), out LocalBuilder scaleFactor).InsertAndAdvance([
 			new(OpCodes.Ldarg_0),
+			new(OpCodes.Ldfld, typeof(MapComponent).GetCheckedField("capi", BindingFlags.Instance)),
+			new(OpCodes.Ldarg_0),
+			new(OpCodes.Ldfld, typeof(EntityMapComponent).GetCheckedField("entity", BindingFlags.Instance)),
 			CodeInstruction.Call(typeof(EntityMapComponentPatch), "GetScaleFactor"),
 			CodeInstruction.StoreLocal(scaleFactor.LocalIndex),
 			CodeInstruction.LoadLocal(scaleFactor.LocalIndex, true),
@@ -64,7 +67,7 @@ internal static class EntityMapComponentPatch {
 		return matcher;
 	}
 
-	internal static int? GetScaleFactor(EntityMapComponent component) {
-		return MapperChunkMapLayer.GetInstance(component.capi).GetScaleFactor((component.entity as EntityPlayer)?.Player as IClientPlayer, component.entity.Pos.ToChunkPosition());
+	internal static int? GetScaleFactor(ICoreAPI api, Entity entity) {
+		return MapperChunkMapLayer.GetInstance(api).GetScaleFactor((entity as EntityPlayer)?.Player as IClientPlayer, entity.Pos.ToChunkPosition());
 	}
 }

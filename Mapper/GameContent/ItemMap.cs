@@ -104,11 +104,11 @@ public class ItemMap : Item {
 	}
 
 	public override void SetToolMode(ItemSlot slot, IPlayer player, BlockSelection selection, int toolMode) {
-		slot.Itemstack.Attributes.SetInt("toolMode", toolMode);
+		slot.Itemstack!.Attributes.SetInt("toolMode", toolMode);
 	}
 
 	public override int GetToolMode(ItemSlot slot, IPlayer player, BlockSelection selection) {
-		return Math.Min(this.toolModeCount - 1, slot.Itemstack.Attributes.GetInt("toolMode"));
+		return Math.Min(this.toolModeCount - 1, slot.Itemstack!.Attributes.GetInt("toolMode"));
 	}
 
 	public override SkillItem[]? GetToolModes(ItemSlot slot, IClientPlayer player, BlockSelection selection) {

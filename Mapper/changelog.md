@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-06
+### Added
+- **New intermediate items:** Fresh/soaked papyrus strips, wet papyrus sheet.
+- Basic support for [Geology Map](https://mods.vintagestory.at/geologymap) mod: Chunks are refreshed and stored periodically, but Mapper processes them and decides if they should be shown.
+### Changed
+- Made papyrus sheet crafting chain more complex by adding cooking and drying steps.
+- Halved parchemnt cost of the precise map.
+- Optimized downloading chunks from the cartography table - it unnecessarily refreshed minimap chunks outside of its view.
+### Fixed
+- GiMap didn't refresh chunks downloaded from the cartography table.
+
 ## [0.4.2] - 2026-04-03
 ### Fixed
 - Cartography table download packet could become too large and the server would reject it.
@@ -62,3 +73,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 [0.3.0]: https://github.com/Genhis/VintageStoryMods/pull/5
 [0.4.0]: https://github.com/Genhis/VintageStoryMods/pull/7
 [0.4.1]: https://github.com/Genhis/VintageStoryMods/pull/10
+[0.4.2]: https://github.com/Genhis/VintageStoryMods/commit/9f351204c07cd2c5dc2f806a046f4a6b1bb0056e
+[0.5.0]: https://github.com/Genhis/VintageStoryMods/pull/11

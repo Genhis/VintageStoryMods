@@ -17,7 +17,7 @@
 		"ingredients": {
 			"C": {"type": "item", "code": "compass-precise-*"},
 			"D": {"type": "item", "code": "game:charcoal", "quantity": 4},
-			"P": {"type": "item", "code": "game:paper-parchment", "quantity": 2}
+			"P": {"type": "item", "code": "game:paper-parchment"}
 		},
 		"output": {"type": "item", "code": "map-precise-coal", "quantity": 8}
 	}

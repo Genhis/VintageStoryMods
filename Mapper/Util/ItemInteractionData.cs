@@ -28,12 +28,12 @@ public class ItemInteractionData {
 		if(this.startSound != null)
 			entity.World.PlaySoundAt(this.startSound, entity, (entity as EntityPlayer)?.Player);
 		if(this.loopSound != null)
-			slot.Itemstack.TempAttributes.SetFloat("secondsUsed", this.loopSoundOffset);
+			slot.Itemstack!.TempAttributes.SetFloat("secondsUsed", this.loopSoundOffset);
 	}
 
 	public bool OnHeldInteractStep(ItemSlot slot, EntityAgent entity, float secondsUsed) {
 		if(this.loopSound != null) {
-			float dt = secondsUsed - slot.Itemstack.TempAttributes.GetFloat("secondsUsed");
+			float dt = secondsUsed - slot.Itemstack!.TempAttributes.GetFloat("secondsUsed");
 			if(dt >= this.loopSoundDuration) {
 				entity.World.PlaySoundAt(this.loopSound, entity, (entity as EntityPlayer)?.Player);
 				slot.Itemstack.TempAttributes.SetFloat("secondsUsed", secondsUsed);

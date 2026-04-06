@@ -2,7 +2,7 @@
 	"code": "compass",
 	"variantgroups": [
 		{"code": "tier", "states": ["primitive"]},
-		{"code": "color", "states": ["blue", "fire", "black", "brown", "cream", "gray", "orange", "red", "tan"]}
+		{"code": "color", "states": ["blue", "fire", "black", "brown", "cream", "earthyorange", "gray", "orange", "red", "tan"]}
 	],
 	"creativeinventory": {"general": ["*"], "items": ["*"]},
 	"maxstacksize": 16,

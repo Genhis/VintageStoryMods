@@ -51,6 +51,12 @@ public readonly struct MapRegion {
 		return null;
 	}
 
+#if DEBUG
+	public readonly void ForceSetColorAndZoom(FastVec2i chunkPosition, ColorAndZoom colorAndZoom) {
+		this.data[MapRegion.GetIndex(chunkPosition)] = colorAndZoom;
+	}
+#endif
+
 	public readonly byte GetZoomLevel(FastVec2i chunkPosition) {
 		return this.data[MapRegion.GetIndex(chunkPosition)].ZoomLevel;
 	}

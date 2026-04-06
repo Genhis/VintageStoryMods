@@ -4,10 +4,9 @@
 	"name": "Mapper",
 	"authors": ["Genhis"],
 	"description": "Adds map drawing mechanic - updates are manual and cost resources. Supports sharing with friends.",
-	"version": "0.4.2",
+	"version": "0.5.0",
 	"website": "https://github.com/Genhis/VintageStoryMods",
 	"dependencies": {
-		"game": "1.21.0",
-		"survival": "1.21.0"
+		"survival": "1.22.0-rc.3"
 	}
 }
