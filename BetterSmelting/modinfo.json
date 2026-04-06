@@ -3,10 +3,10 @@
 	"modid": "bettersmelting",
 	"name": "Better Smelting",
 	"authors": ["Genhis"],
-	"description": "Improves firepit smelting process and coal pile and forge fuel consumption.",
-	"version": "0.2.1",
+	"description": "Improves firepit smelting process and coal pile fuel consumption.",
+	"version": "0.3.0",
 	"website": "https://github.com/Genhis/VintageStoryMods",
 	"dependencies": {
-		"survival": "1.20.0"
+		"survival": "1.22.0-pre.1"
 	}
 }

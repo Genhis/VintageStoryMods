@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using Vintagestory.API.Common;
@@ -11,7 +11,7 @@ namespace BetterSmelting.Patches {
 		internal static int CookingSlotHeatingTimeLiquidSmeltedRatio = 0;
 		internal static float CookingSlotHeatingTimeMultiplier = 0;
 
-		[HarmonyPatch("OnSlotModifid")]
+		[HarmonyPatch("OnSlotModified")]
 		[HarmonyPostfix]
 		internal static void OnSlotModifid(BlockEntityFirepit __instance) {
 			if(__instance.otherCookingSlots.Length == 0)
@@ -40,33 +40,36 @@ namespace BetterSmelting.Patches {
 		internal static IEnumerable<CodeInstruction> HeatInput(IEnumerable<CodeInstruction> instructions) {
 			CodeMatcher matcher = new(instructions);
 
-			// Find https://github.com/anegostudios/vssurvivalmod/blob/ac9a0059d84ca3449f066f26b5ee6b47bc9ce76a/BlockEntity/Firepit/BEFirepit.cs#L317
-			// Append `* BlockEntityFirepitPatch.HeatInputItemStackMass(this)`
-			matcher.MatchEndForward(new CodeMatch[] {
-				new(OpCodes.Ldc_R4, 1.6f),
-				new(OpCodes.Call, typeof(GameMath).GetMethod("Clamp", new System.Type[]{typeof(float), typeof(float), typeof(float)})),
-				new(OpCodes.Add),
-				new(OpCodes.Ldarg_1),
-				new(OpCodes.Mul),
-			}).ThrowIfInvalid("Could not find `BlockEntityFirepit.heatInput()::f` to patch").Advance(1).InsertAndAdvance(new CodeInstruction[] {
+			// Find https://github.com/anegostudios/vssurvivalmod/blob/8eb9552972540749393fa7fa8206d28f582e8dca/BlockEntity/Firepit/BEFirepit.cs#L338
+			// Append `+ BlockEntityFirepitPatch.HeatInputItemStackMass(this)`
+			matcher.MatchEndForward([
+				new(OpCodes.Callvirt, typeof(ItemStack).GetProperty("StackSize")!.GetMethod),
+				new(OpCodes.Conv_R4),
+				CodeMatch.IsStloc(),
+			]).ThrowIfInvalid("Could not find `BlockEntityFirepit.heatInput()::stackSize` to patch").InsertAndAdvance([
 				new(OpCodes.Ldarg_0),
 				CodeInstruction.Call(typeof(BlockEntityFirepitPatch), "HeatInputItemStackMass"),
-				new(OpCodes.Div),
-			});
+				new(OpCodes.Add),
+			]);
 
-			// Remember `f` set instruction
-			CodeInstruction fStloc = matcher.Instruction;
-			if(!fStloc.IsStloc())
-				throw new System.InvalidOperationException("Unexpected instruction after `f` assignment expression, Stloc expected.");
-
-			// Find https://github.com/anegostudios/vssurvivalmod/blob/ac9a0059d84ca3449f066f26b5ee6b47bc9ce76a/BlockEntity/Firepit/BEFirepit.cs#L318
-			// Remove `f /= 11`
-			matcher.MatchStartForward(new CodeMatch[] {
-				new(CodeInstruction.LoadLocal(fStloc.LocalIndex())),
+			// Find https://github.com/anegostudios/vssurvivalmod/blob/8eb9552972540749393fa7fa8206d28f582e8dca/BlockEntity/Firepit/BEFirepit.cs#L344
+			// Remove `if(nowTemp >= meltingPoint) f /= 11`
+			int fLocalIndex = -1;
+			matcher.MatchStartForward([
+				new(i => {
+					if(!i.IsStloc())
+						return false;
+					fLocalIndex = i.LocalIndex();
+					return true;
+				}),
+				CodeMatch.IsLdloc(),
+				CodeMatch.IsLdloc(),
+				new(i => matcher.Remaining >= 8 && i.opcode == OpCodes.Blt_Un_S && i.operand is Label label && matcher.InstructionAt(8).labels.Contains(label)),
+				new(i => i.IsLdloc() && i.LocalIndex() == fLocalIndex),
 				new(OpCodes.Ldc_R4, 11f),
 				new(OpCodes.Div),
-				new(fStloc),
-			}).ThrowIfInvalid("Could not find `f /= 11` in `BlockEntityFirepit.heatInput()` to patch").RemoveInstructions(4);
+				new(i => i.IsStloc() && i.LocalIndex() == fLocalIndex),
+			]).ThrowIfInvalid("Could not find `f /= 11` in `BlockEntityFirepit.heatInput()` to patch").Advance(1).RemoveInstructions(7);
 
 			// Find https://github.com/anegostudios/vssurvivalmod/blob/ac9a0059d84ca3449f066f26b5ee6b47bc9ce76a/BlockEntity/Firepit/BEFirepit.cs#L338
 			// Change Clamp() arguments to float type
@@ -90,25 +93,11 @@ namespace BetterSmelting.Patches {
 			foreach(ItemSlot slot in firepit.otherCookingSlots)
 				if(slot.Itemstack?.Collectible?.CombustibleProps != null)
 					cookingMass += slot.Itemstack.StackSize / BlockEntityFirepitPatch.GetSmeltedRatio(slot.Itemstack.Collectible);
-			return firepit.inputStack.StackSize + cookingMass * BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier;
+			return cookingMass * BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier;
 		}
 
 		private static int GetSmeltedRatio(CollectibleObject obj) {
 			return obj.Class == "ItemLiquidPortion" ? BlockEntityFirepitPatch.CookingSlotHeatingTimeLiquidSmeltedRatio : obj.CombustibleProps.SmeltedRatio;
-		}
-
-		[HarmonyPatch("smeltItems")]
-		[HarmonyTranspiler]
-		internal static IEnumerable<CodeInstruction> SmeltItems(IEnumerable<CodeInstruction> instructions) {
-			// Find https://github.com/anegostudios/vssurvivalmod/blob/ac9a0059d84ca3449f066f26b5ee6b47bc9ce76a/BlockEntity/Firepit/BEFirepit.cs#L533
-			// Remove line
-			return new CodeMatcher(instructions).MatchStartForward(new CodeMatch[] {
-				new(OpCodes.Ldarg_0),
-				new(OpCodes.Ldarg_0),
-				new(OpCodes.Callvirt, typeof(BlockEntityFirepit).GetMethod("environmentTemperature")),
-				new(OpCodes.Conv_R4),
-				new(OpCodes.Call, typeof(BlockEntityFirepit).GetProperty("InputStackTemp").SetMethod),
-			}).ThrowIfInvalid("Could not find BlockEntityFirepit.smeltItems()::InputStackTemp to patch").RemoveInstructions(5).InstructionEnumeration();
 		}
 	}
 }

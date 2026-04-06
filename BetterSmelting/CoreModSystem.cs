@@ -1,4 +1,4 @@
-﻿using BetterSmelting.Patches;
+using BetterSmelting.Patches;
 using HarmonyLib;
 using System;
 using Vintagestory.API.Client;
@@ -8,7 +8,7 @@ using Vintagestory.API.Server;
 namespace BetterSmelting {
 	public class CoreModSystem : ModSystem {
 		private static bool enabled = true;
-		private Harmony harmony;
+		private Harmony? harmony;
 
 		public override void Start(ICoreAPI api) {
 			base.Start(api);
@@ -41,7 +41,6 @@ namespace BetterSmelting {
 			this.Mod.Logger.Notification("Retrieving server config for the client");
 			BlockEntityFirepitPatch.CookingSlotHeatingTimeLiquidSmeltedRatio = api.World.Config.GetInt(this.Mod.Info.ModID + "_CookingSlotHeatingTimeLiquidSmeltedRatio");
 			BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier = api.World.Config.GetFloat(this.Mod.Info.ModID + "_CookingSlotHeatingTimeMultiplier");
-			BlockEntityForgePatch.ForgeMinimumFuelTemperature = api.World.Config.GetInt(this.Mod.Info.ModID + "_ForgeMinimumFuelTemperature");
 		}
 
 		public override void StartServerSide(ICoreServerAPI api) {
@@ -52,7 +51,6 @@ namespace BetterSmelting {
 			this.LoadServerConfig(api);
 			api.World.Config.SetInt(this.Mod.Info.ModID + "_CookingSlotHeatingTimeLiquidSmeltedRatio", BlockEntityFirepitPatch.CookingSlotHeatingTimeLiquidSmeltedRatio);
 			api.World.Config.SetFloat(this.Mod.Info.ModID + "_CookingSlotHeatingTimeMultiplier", BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier);
-			api.World.Config.SetInt(this.Mod.Info.ModID + "_ForgeMinimumFuelTemperature", BlockEntityForgePatch.ForgeMinimumFuelTemperature);
 		}
 
 		public override void Dispose() {
@@ -79,7 +77,6 @@ namespace BetterSmelting {
 
 			BlockEntityFirepitPatch.CookingSlotHeatingTimeLiquidSmeltedRatio = config.CookingSlotHeatingTimeLiquidSmeltedRatio;
 			BlockEntityFirepitPatch.CookingSlotHeatingTimeMultiplier = config.CookingSlotHeatingTimeMultiplier;
-			BlockEntityForgePatch.ForgeMinimumFuelTemperature = config.ForgeMinimumFuelTemperature;
 		}
 	}
 }
