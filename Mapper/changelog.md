@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.5.1] - 2026-04-16
 ### Fixed
 - The client crashed when it tried to render the GUI while the player wasn't controlling any entity.
 - Cartography table lost data when code patching failed and the world was saved with Mapper mod disabled.
@@ -78,3 +80,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 [0.4.1]: https://github.com/Genhis/VintageStoryMods/pull/10
 [0.4.2]: https://github.com/Genhis/VintageStoryMods/commit/9f351204c07cd2c5dc2f806a046f4a6b1bb0056e
 [0.5.0]: https://github.com/Genhis/VintageStoryMods/pull/11
+[0.5.1]: https://github.com/Genhis/VintageStoryMods/pull/12
