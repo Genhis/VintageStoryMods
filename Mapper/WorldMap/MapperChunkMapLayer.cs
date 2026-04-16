@@ -428,7 +428,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 		lock(this.clientStorage!.SaveLock)
 			if(this.Enabled && this.clientStorage.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk))
 				scaleFactor = 1 << mapChunk.ColorAndZoom.ZoomLevel;
-		if(player != null)
+		if(player?.Entity != null)
 			scaleFactor = MathUtil.Min(scaleFactor, MathUtil.Min(GetCompassScaleFactor(player.Entity.LeftHandItemSlot), GetCompassScaleFactor(player.Entity.RightHandItemSlot)));
 		return scaleFactor;
 	}
