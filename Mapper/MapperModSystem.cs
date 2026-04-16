@@ -13,7 +13,7 @@ using Vintagestory.API.Common;
 using Vintagestory.GameContent;
 
 public class MapperModSystem : ModSystem {
-	private static bool enabled = true;
+	internal static bool enabled = true;
 	private Harmony? harmony;
 	private CompassNeedleUpdater? compassNeedleUpdater;
 	internal MapperChunkMapLayer? mapLayer;
@@ -26,29 +26,24 @@ public class MapperModSystem : ModSystem {
 		else if(MapperModSystem.enabled)
 			this.PatchCode();
 
-		if(MapperModSystem.enabled) {
-			this.Mod.Logger.Notification("Registering new classes");
-			api.ModLoader.GetModSystem<WorldMapManager>().RegisterMapLayer<MapperChunkMapLayer>("chunks", 0);
-			api.RegisterBlockClass("MapperCartographyTable", typeof(BlockCartographyTable));
-			api.RegisterBlockEntityClass("MapperCartographyTable", typeof(BlockEntityCartographyTable));
-			api.RegisterCollectibleBehaviorClass("MapperCartographyTableDisplay", typeof(BehaviorCartographyTableDisplay));
-			api.RegisterCollectibleBehaviorClass("MapperCompassNeedle", typeof(BehaviorCompassNeedle));
-			api.RegisterItemClass("MapperMap", typeof(ItemMap));
-			api.RegisterItemClass("MapperPaintbrush", typeof(ItemPaintbrush));
-		}
+		this.Mod.Logger.Notification("Registering new classes");
+		api.ModLoader.GetModSystem<WorldMapManager>().RegisterMapLayer<MapperChunkMapLayer>("chunks", 0);
+		api.RegisterBlockClass("MapperCartographyTable", typeof(BlockCartographyTable));
+		api.RegisterBlockEntityClass("MapperCartographyTable", typeof(BlockEntityCartographyTable));
+		api.RegisterCollectibleBehaviorClass("MapperCartographyTableDisplay", typeof(BehaviorCartographyTableDisplay));
+		api.RegisterCollectibleBehaviorClass("MapperCompassNeedle", typeof(BehaviorCompassNeedle));
+		api.RegisterItemClass("MapperMap", typeof(ItemMap));
+		api.RegisterItemClass("MapperPaintbrush", typeof(ItemPaintbrush));
 	}
 
 	public override void StartClientSide(ICoreClientAPI api) {
 		base.StartClientSide(api);
-		if(MapperModSystem.enabled) {
-			int count = api.Gui.Icons.RegisterCustomIcons(api, "textures/icons/gui", "mapper");
-			this.Mod.Logger.Notification($"Registered {count} custom GUI icons");
+		api.Event.LevelFinalize += this.OnLevelFinalizedClient;
 
-			this.Mod.Logger.Notification("Registering OnTick handler for compass updates");
-			this.compassNeedleUpdater = new CompassNeedleUpdater(api);
+		int count = api.Gui.Icons.RegisterCustomIcons(api, "textures/icons/gui", "mapper");
+		this.Mod.Logger.Notification($"Registered {count} custom GUI icons");
 
-			api.Event.LevelFinalize += this.OnLevelFinalizedClient;
-		}
+		this.compassNeedleUpdater = new CompassNeedleUpdater(api);
 	}
 
 	private void PatchCode() {
@@ -77,7 +72,10 @@ public class MapperModSystem : ModSystem {
 
 	private void OnLevelFinalizedClient() {
 		this.Mod.Logger.Notification($"Loaded {TesselationUtil.LoadedMeshCount} additional shapes and {CustomTextureSource.LoadedTextureCount} textures for dynamic effects");
-		PatchDebugger.CheckPatchConflicts(this.Mod.Info.ModID, this.Mod.Logger, true);
+		if(MapperModSystem.enabled)
+			PatchDebugger.CheckPatchConflicts(this.Mod.Info.ModID, this.Mod.Logger, true);
+		else
+			this.Mod.Logger.Error("Patching failed, Mapper won't function properly");
 	}
 
 	public override void Dispose() {

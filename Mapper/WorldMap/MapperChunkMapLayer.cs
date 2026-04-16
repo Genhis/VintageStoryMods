@@ -42,7 +42,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 	private ILogger logger;
 	private int startTime;
 	private bool dirty;
-	private enum Status { Enabled, DisabledMap, CorruptedData }
+	private enum Status { Enabled, DisabledMap, CorruptedData, ModFailed }
 	private Status status = Status.Enabled;
 
 	private IClientPlayer ClientPlayer => ((ICoreClientAPI)this.api).World.Player;
@@ -91,6 +91,11 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 		if(this.api is ICoreServerAPI sapi) {
 			this.startTime = sapi.WorldManager.SaveGame.GetData<int>("mapper:time") - (int)(sapi.World.ElapsedMilliseconds / 1000);
 			this.logger.Notification("Loading chunk map layer, current time is " + this.CurrentTime);
+		}
+
+		if(!MapperModSystem.enabled) {
+			this.status = Status.ModFailed;
+			return;
 		}
 
 		if(!this.api.World.Config.GetBool("allowMap", true)) {
@@ -428,7 +433,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 		lock(this.clientStorage!.SaveLock)
 			if(this.Enabled && this.clientStorage.Chunks.TryGetValue(chunkPosition, out MapChunk mapChunk))
 				scaleFactor = 1 << mapChunk.ColorAndZoom.ZoomLevel;
-		if(player != null)
+		if(player?.Entity != null)
 			scaleFactor = MathUtil.Min(scaleFactor, MathUtil.Min(GetCompassScaleFactor(player.Entity.LeftHandItemSlot), GetCompassScaleFactor(player.Entity.RightHandItemSlot)));
 		return scaleFactor;
 	}
@@ -737,6 +742,7 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 		return status switch {
 			Status.DisabledMap => "mod-disabled",
 			Status.CorruptedData => "mod-data-corrupted-" + (client ? "client" : "server"),
+			Status.ModFailed => "mod-failed",
 			_ => throw new InvalidOperationException($"Invalid status: {status} ({(int)status})"),
 		};
 	}
