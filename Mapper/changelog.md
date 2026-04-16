@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 ### Fixed
 - The client crashed when it tried to render the GUI while the player wasn't controlling any entity.
+- Cartography table lost data when code patching failed and the world was saved with Mapper mod disabled.
 
 ## [0.5.0] - 2026-04-06
 ### Added
