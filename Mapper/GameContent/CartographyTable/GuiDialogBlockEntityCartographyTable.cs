@@ -72,7 +72,7 @@ public class GuiDialogBlockEntityCartographyTable : GuiDialogBlockEntity {
 	}
 
 	private bool RunAction(TransferDirection transferDirection) {
-		MapperChunkMapLayer mapLayer = MapperChunkMapLayer.GetInstance(this.capi);
+		IMapperChunkMapLayer mapLayer = MapperChunkMapLayer.GetInterface(this.capi);
 		if(!mapLayer.CheckEnabledClient())
 			return false;
 

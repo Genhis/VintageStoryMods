@@ -20,7 +20,7 @@ public static class GuiElementMapPatch {
 	public static void CenterMapToPlayer(this GuiElementMap map) {
 		IClientPlayer player = map.Api.World.Player;
 		EntityPos entityPos = player.Entity.Pos;
-		int? scaleFactor = MapperChunkMapLayer.GetInstance(map.Api).GetScaleFactor(player, entityPos.ToChunkPosition());
+		int? scaleFactor = MapperChunkMapLayer.GetInterface(map.Api).GetScaleFactor(player, entityPos.ToChunkPosition());
 		if(scaleFactor != null)
 			map.CenterMapTo(MapperChunkMapLayer.ClampPosition(entityPos.XYZ, scaleFactor.Value).AsBlockPos);
 	}
@@ -48,7 +48,7 @@ public static class GuiElementMapPatch {
 		__instance.Bounds.CalcWorldBounds();
 		__instance.chunkViewBoundsBefore = new();
 
-		Vec3d position = MapperChunkMapLayer.GetInstance(__instance.Api).GetPlayerOrLastKnownPosition();
+		Vec3d position = MapperChunkMapLayer.GetInterface(__instance.Api).GetPlayerOrLastKnownPosition();
 		___prevPlayerPos.Set(position);
 		__instance.CenterMapTo(position.AsBlockPos);
 		return false;
@@ -74,7 +74,7 @@ public static class GuiElementMapPatch {
 	[HarmonyPatch("RenderInteractiveElements")]
 	[HarmonyPrefix]
 	internal static void RenderInteractiveElements(GuiElementMap __instance, Vec3d ___prevPlayerPos, bool ___snapToPlayer) {
-		MapperChunkMapLayer layer = MapperChunkMapLayer.GetInstance(__instance.Api);
+		IMapperChunkMapLayer layer = MapperChunkMapLayer.GetInterface(__instance.Api);
 		IClientPlayer player = __instance.Api.World.Player;
 		int? scaleFactor = layer.GetScaleFactor(player, player.Entity.Pos.ToChunkPosition());
 		if(scaleFactor == null) {

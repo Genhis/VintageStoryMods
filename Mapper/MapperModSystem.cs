@@ -17,9 +17,11 @@ public class MapperModSystem : ModSystem {
 	private Harmony? harmony;
 	private CompassNeedleUpdater? compassNeedleUpdater;
 	internal MapperChunkMapLayer? mapLayer;
+	private DummyMapperChunkMapLayer? dummyMapLayer;
 
 	public override void Start(ICoreAPI api) {
 		base.Start(api);
+		this.dummyMapLayer = new(api);
 
 		if(Harmony.HasAnyPatches(this.Mod.Info.ModID))
 			this.Mod.Logger.Notification("Code is already patched");
@@ -89,5 +91,9 @@ public class MapperModSystem : ModSystem {
 			this.compassNeedleUpdater = null;
 		}
 		base.Dispose();
+	}
+
+	public IMapperChunkMapLayer GetInterface() {
+		return (IMapperChunkMapLayer?)this.mapLayer ?? this.dummyMapLayer!;
 	}
 }

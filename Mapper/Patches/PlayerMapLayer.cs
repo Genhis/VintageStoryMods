@@ -67,7 +67,7 @@ internal static class PlayerMapLayerPatch {
 	}
 
 	internal static bool ClampPosition(ICoreAPI api, IPlayer player, Vec3d worldPos) {
-		int? scaleFactor = MapperChunkMapLayer.GetInstance(api).GetScaleFactor(player as IClientPlayer, worldPos.ToChunkPosition());
+		int? scaleFactor = MapperChunkMapLayer.GetInterface(api).GetScaleFactor(player as IClientPlayer, worldPos.ToChunkPosition());
 		if(scaleFactor == null)
 			return false;
 

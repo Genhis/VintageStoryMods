@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 ### Fixed
 - Server threw an exception when a cartography table fully depleted its drawing kit.
+- Handled incorrect Mapper assumptions about object state when incompatible mods were present. An in-game error is shown instead of a crash. ([#13](https://github.com/Genhis/VintageStoryMods/issues/13))
 
 ## [0.5.1] - 2026-04-16
 ### Fixed

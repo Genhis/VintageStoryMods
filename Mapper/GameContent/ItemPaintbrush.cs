@@ -64,7 +64,7 @@ public class ItemPaintbrush : Item {
 			base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handling);
 			return;
 		}
-		if(!firstEvent || this.api.Side == EnumAppSide.Client && !MapperChunkMapLayer.GetInstance(this.api).CheckEnabledClient())
+		if(!firstEvent || this.api.Side == EnumAppSide.Client && !MapperChunkMapLayer.GetInterface(this.api).CheckEnabledClient())
 			return;
 
 		handling = EnumHandHandling.PreventDefault;
@@ -91,7 +91,7 @@ public class ItemPaintbrush : Item {
 		ItemStack paintsetStack = slotAndColor.Slot.Itemstack!;
 		int oldAvailablePixels = ItemPaintset.GetAvailablePixels(paintsetStack);
 		int mode = this.GetToolMode(slot, player, blockSel);
-		int newAvailablePixels = MapperChunkMapLayer.GetInstance(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), mode % this.rangeCount * this.stepRange + this.minRange, oldAvailablePixels, slotAndColor.ColorLevel, ColorAndZoom.EmptyZoomLevel, !this.hasUpgradeMode || mode >= this.rangeCount);
+		int newAvailablePixels = MapperChunkMapLayer.GetInterface(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), mode % this.rangeCount * this.stepRange + this.minRange, oldAvailablePixels, slotAndColor.ColorLevel, ColorAndZoom.EmptyZoomLevel, !this.hasUpgradeMode || mode >= this.rangeCount);
 		ItemPaintset.DamageItem(byEntity.World, byEntity, slotAndColor.Slot, oldAvailablePixels, newAvailablePixels);
 	}
 
