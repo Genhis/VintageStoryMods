@@ -137,8 +137,20 @@ public static class ItemPaintset {
 	public static void DamageItem(IWorldAccessor world, EntityAgent? byEntity, ItemSlot slot, int oldAvailablePixels, int newAvailablePixels) {
 		int realDamage = (oldAvailablePixels - newAvailablePixels) / MapChunk.Area;
 		slot.Itemstack!.Attributes.SetInt("fractionalDurability", newAvailablePixels % MapChunk.Area);
-		if(realDamage > 0)
-			slot.Itemstack.Collectible.DamageItem(world, byEntity, slot, realDamage);
+		if(realDamage <= 0)
+			return;
+
+		CollectibleObject obj = slot.Itemstack.Collectible;
+		if(byEntity != null)
+			obj.DamageItem(world, byEntity, slot, realDamage);
+		else {
+			int remainingDurability = obj.GetRemainingDurability(slot.Itemstack) - realDamage;
+			obj.SetDurability(slot.Itemstack, remainingDurability);
+			if(remainingDurability <= 0) {
+				slot.Itemstack = null;
+				slot.MarkDirty();
+			}
+		}
 	}
 
 	public static int GetAvailablePixels(ItemStack? stack) => stack == null ? 0 : stack.Collectible.GetRemainingDurability(stack) * MapChunk.Area + stack.Attributes.GetInt("fractionalDurability");
