@@ -16,7 +16,10 @@ public static class ModPatchUtil {
 		if(api.Side == EnumAppSide.Server)
 			return;
 
-		MapperChunkMapLayer mapperLayer = MapperChunkMapLayer.GetInstance(api);
+		MapperChunkMapLayer? mapperLayer = MapperChunkMapLayer.GetInstance(api);
+		if(mapperLayer == null)
+			return;
+
 		lock(mapperLayer.OnChunkRedrawn)
 			mapperLayer.OnChunkRedrawn[instance] = chunkPosition => {
 				lock(chunksToGenLock)
@@ -39,7 +42,7 @@ public static class ModPatchUtil {
 	}
 
 	public static bool LoadFromChunkPixels(FastVec2i cord, ref int[] pixels, ICoreAPI api, bool useBoxFilter) {
-		int? scaleFactor = MapperChunkMapLayer.GetInstance(api).GetScaleFactor((IClientPlayer?)null, cord);
+		int? scaleFactor = MapperChunkMapLayer.GetInterface(api).GetScaleFactor((IClientPlayer?)null, cord);
 		if(scaleFactor == null)
 			return false;
 		if(useBoxFilter && scaleFactor != 1)
@@ -81,6 +84,6 @@ public static class ModPatchUtil {
 	}
 
 	public static bool HasChunk(ICoreAPI api, FastVec2i chunkPosition) {
-		return MapperChunkMapLayer.GetInstance(api).GetScaleFactor((IClientPlayer?)null, chunkPosition) != null;
+		return MapperChunkMapLayer.GetInterface(api).GetScaleFactor((IClientPlayer?)null, chunkPosition) != null;
 	}
 }

@@ -38,7 +38,7 @@ internal static class AutoMapMarkers {
 	}
 
 	internal static bool AddWaypointInsert(IServerPlayer player, Vec3d position) {
-		MapperChunkMapLayer layer = MapperChunkMapLayer.GetInstance(player.Entity.Api);
+		IMapperChunkMapLayer layer = MapperChunkMapLayer.GetInterface(player.Entity.Api);
 		int? scaleFactor = layer.GetScaleFactor(player, position.ToChunkPosition());
 		if(scaleFactor == null) {
 			layer.TrySendUnrevealedMapMessage(player);

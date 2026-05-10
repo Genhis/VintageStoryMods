@@ -13,7 +13,7 @@ internal static class ModSystemOreMapPatch {
 	[HarmonyPatch("DidProbe")]
 	[HarmonyPrefix]
 	internal static bool DidProbe(PropickReading results, IServerPlayer splr, ICoreAPI ___api) {
-		int? scaleFactor = MapperChunkMapLayer.GetInstance(___api).GetScaleFactor(splr, results.Position.ToChunkPosition());
+		int? scaleFactor = MapperChunkMapLayer.GetInterface(___api).GetScaleFactor(splr, results.Position.ToChunkPosition());
 		if(scaleFactor == null) {
 			splr.SendMessage(GlobalConstants.InfoLogChatGroup, Lang.GetL(splr.LanguageCode, "mapper:error-unexplored-map-propick"), EnumChatType.Notification);
 			return false;

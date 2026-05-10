@@ -212,7 +212,8 @@ public class BlockEntityCartographyTable : BlockEntityContainer {
 		}
 		else {
 			this.mapAttributes = new();
-			this.inventory.MapSlot.TakeOutWholeAndMarkDirty();
+			if(!this.inventory.MapSlot.Empty)
+				this.inventory.MapSlot.TakeOutWholeAndMarkDirty();
 		}
 		this.MarkDirty();
 	}

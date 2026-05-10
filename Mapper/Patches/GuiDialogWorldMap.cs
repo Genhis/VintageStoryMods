@@ -15,7 +15,7 @@ internal static class GuiDialogWorldMapPatch {
 	[HarmonyPatch("Open")]
 	[HarmonyPrefix]
 	internal static bool Open(GuiDialogWorldMap __instance, EnumDialogType type, ICoreClientAPI ___capi) {
-		if(type == EnumDialogType.Dialog || !MapperChunkMapLayer.GetInstance(___capi).HasLastKnownPosition())
+		if(type == EnumDialogType.Dialog || !MapperChunkMapLayer.GetInterface(___capi).HasLastKnownPosition())
 			return true;
 		if(__instance.IsOpened())
 			__instance.TryClose();
@@ -37,8 +37,8 @@ internal static class GuiDialogWorldMapPatch {
 		matcher.Advance(1).InsertAndAdvance([
 			new(OpCodes.Ldarg_0),
 			CodeInstruction.LoadField(typeof(GuiDialog), "capi"),
-			new(OpCodes.Call, typeof(MapperChunkMapLayer).GetCheckedMethod("GetInstance", BindingFlags.Static, [typeof(ICoreAPI)])),
-			new(OpCodes.Callvirt, typeof(MapperChunkMapLayer).GetCheckedMethod("HasLastKnownPosition", BindingFlags.Instance, [])),
+			new(OpCodes.Call, typeof(MapperChunkMapLayer).GetCheckedMethod("GetInterface", BindingFlags.Static, [typeof(ICoreAPI)])),
+			new(OpCodes.Callvirt, typeof(IMapperChunkMapLayer).GetCheckedMethod("HasLastKnownPosition", BindingFlags.Instance, [])),
 			skipOpenHud.Clone(),
 		]);
 

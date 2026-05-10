@@ -68,6 +68,6 @@ internal static class EntityMapComponentPatch {
 	}
 
 	internal static int? GetScaleFactor(ICoreAPI api, Entity entity) {
-		return MapperChunkMapLayer.GetInstance(api).GetScaleFactor((entity as EntityPlayer)?.Player as IClientPlayer, entity.Pos.ToChunkPosition());
+		return MapperChunkMapLayer.GetInterface(api).GetScaleFactor((entity as EntityPlayer)?.Player as IClientPlayer, entity.Pos.ToChunkPosition());
 	}
 }

@@ -17,7 +17,7 @@ using Vintagestory.API.Server;
 using Vintagestory.API.Util;
 using Vintagestory.GameContent;
 
-public partial class MapperChunkMapLayer : ChunkMapLayer {
+public partial class MapperChunkMapLayer : ChunkMapLayer, IMapperChunkMapLayer {
 	private const int ClientAutosaveTime = 60 * 5;
 	private static readonly FieldAccessor<ChunkMapLayer, UniqueQueue<FastVec2i>> chunksToGen = new("chunksToGen");
 	private static readonly FieldAccessor<ChunkMapLayer, object> chunksToGenLock = new("chunksToGenLock");
@@ -680,8 +680,12 @@ public partial class MapperChunkMapLayer : ChunkMapLayer {
 	}
 #endregion
 
-	internal static MapperChunkMapLayer GetInstance(ICoreAPI api) {
-		return api.ModLoader.GetModSystem<MapperModSystem>().mapLayer!;
+	internal static IMapperChunkMapLayer GetInterface(ICoreAPI api) {
+		return api.ModLoader.GetModSystem<MapperModSystem>().GetInterface();
+	}
+
+	internal static MapperChunkMapLayer? GetInstance(ICoreAPI api) {
+		return api.ModLoader.GetModSystem<MapperModSystem>().mapLayer;
 	}
 
 	public static Vec3d ClampPosition(Vec3d position, int scaleFactor) {

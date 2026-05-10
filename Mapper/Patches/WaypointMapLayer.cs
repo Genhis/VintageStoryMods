@@ -20,7 +20,7 @@ internal static class WaypointMapLayerPatch {
 	[HarmonyPatch("AddWp")]
 	[HarmonyPrefix]
 	internal static bool AddWp(IServerPlayer player, Vec3d pos, ref TextCommandResult __result, ICoreAPI ___api) {
-		int? scaleFactor = MapperChunkMapLayer.GetInstance(___api).GetScaleFactor(player, pos.ToChunkPosition());
+		int? scaleFactor = MapperChunkMapLayer.GetInterface(___api).GetScaleFactor(player, pos.ToChunkPosition());
 		if(scaleFactor == null) {
 			__result = TextCommandResult.Success(Lang.GetL(player.LanguageCode, "mapper:error-unexplored-map"));
 			return false;
@@ -68,6 +68,6 @@ internal static class WaypointMapLayerPatch {
 	}
 
 	internal static int? GetScaleFactor(IServerPlayer player) {
-		return MapperChunkMapLayer.GetInstance(player.Entity.Api).GetScaleFactor(player, player.Entity.Pos.ToChunkPosition());
+		return MapperChunkMapLayer.GetInterface(player.Entity.Api).GetScaleFactor(player, player.Entity.Pos.ToChunkPosition());
 	}
 }

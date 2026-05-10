@@ -64,7 +64,7 @@ public class ItemPaintbrush : Item {
 			base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handling);
 			return;
 		}
-		if(!firstEvent || this.api.Side == EnumAppSide.Client && !MapperChunkMapLayer.GetInstance(this.api).CheckEnabledClient())
+		if(!firstEvent || this.api.Side == EnumAppSide.Client && !MapperChunkMapLayer.GetInterface(this.api).CheckEnabledClient())
 			return;
 
 		handling = EnumHandHandling.PreventDefault;
@@ -91,7 +91,7 @@ public class ItemPaintbrush : Item {
 		ItemStack paintsetStack = slotAndColor.Slot.Itemstack!;
 		int oldAvailablePixels = ItemPaintset.GetAvailablePixels(paintsetStack);
 		int mode = this.GetToolMode(slot, player, blockSel);
-		int newAvailablePixels = MapperChunkMapLayer.GetInstance(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), mode % this.rangeCount * this.stepRange + this.minRange, oldAvailablePixels, slotAndColor.ColorLevel, ColorAndZoom.EmptyZoomLevel, !this.hasUpgradeMode || mode >= this.rangeCount);
+		int newAvailablePixels = MapperChunkMapLayer.GetInterface(this.api).MarkChunksForRedraw(player, byEntity.Pos.ToChunkPosition(), mode % this.rangeCount * this.stepRange + this.minRange, oldAvailablePixels, slotAndColor.ColorLevel, ColorAndZoom.EmptyZoomLevel, !this.hasUpgradeMode || mode >= this.rangeCount);
 		ItemPaintset.DamageItem(byEntity.World, byEntity, slotAndColor.Slot, oldAvailablePixels, newAvailablePixels);
 	}
 
@@ -137,8 +137,20 @@ public static class ItemPaintset {
 	public static void DamageItem(IWorldAccessor world, EntityAgent? byEntity, ItemSlot slot, int oldAvailablePixels, int newAvailablePixels) {
 		int realDamage = (oldAvailablePixels - newAvailablePixels) / MapChunk.Area;
 		slot.Itemstack!.Attributes.SetInt("fractionalDurability", newAvailablePixels % MapChunk.Area);
-		if(realDamage > 0)
-			slot.Itemstack.Collectible.DamageItem(world, byEntity, slot, realDamage);
+		if(realDamage <= 0)
+			return;
+
+		CollectibleObject obj = slot.Itemstack.Collectible;
+		if(byEntity != null)
+			obj.DamageItem(world, byEntity, slot, realDamage);
+		else {
+			int remainingDurability = obj.GetRemainingDurability(slot.Itemstack) - realDamage;
+			obj.SetDurability(slot.Itemstack, remainingDurability);
+			if(remainingDurability <= 0) {
+				slot.Itemstack = null;
+				slot.MarkDirty();
+			}
+		}
 	}
 
 	public static int GetAvailablePixels(ItemStack? stack) => stack == null ? 0 : stack.Collectible.GetRemainingDurability(stack) * MapChunk.Area + stack.Attributes.GetInt("fractionalDurability");
